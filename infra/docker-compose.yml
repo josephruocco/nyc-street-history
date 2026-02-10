@@ -13,8 +13,8 @@ services:
   api:
     build:
       context: ../backend
-    environment:
-      DATABASE_URL: postgresql+psycopg://streetuser:streetpass@db:5432/streetdb
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     depends_on:
