@@ -7,19 +7,32 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		D916B2FC2F3AAD5500710809 /* StreetHistory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StreetHistory.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D97D81A52F3BE49800933D15 /* StreetHistory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StreetHistory.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D97D81C02F3BE59800933D15 /* Exceptions for "StreetHistory" folder in "StreetHistory" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D97D81A42F3BE49800933D15 /* StreetHistory */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D916B2FE2F3AAD5500710809 /* StreetHistory */ = {
+		D97D81A72F3BE49800933D15 /* StreetHistory */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D97D81C02F3BE59800933D15 /* Exceptions for "StreetHistory" folder in "StreetHistory" target */,
+			);
 			path = StreetHistory;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		D916B2F92F3AAD5500710809 /* Frameworks */ = {
+		D97D81A22F3BE49800933D15 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,18 +42,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		D916B2F32F3AAD5500710809 = {
+		D97D819C2F3BE49800933D15 = {
 			isa = PBXGroup;
 			children = (
-				D916B2FE2F3AAD5500710809 /* StreetHistory */,
-				D916B2FD2F3AAD5500710809 /* Products */,
+				D97D81A72F3BE49800933D15 /* StreetHistory */,
+				D97D81A62F3BE49800933D15 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		D916B2FD2F3AAD5500710809 /* Products */ = {
+		D97D81A62F3BE49800933D15 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D916B2FC2F3AAD5500710809 /* StreetHistory.app */,
+				D97D81A52F3BE49800933D15 /* StreetHistory.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,64 +61,65 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D916B2FB2F3AAD5500710809 /* StreetHistory */ = {
+		D97D81A42F3BE49800933D15 /* StreetHistory */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D916B3072F3AAD5800710809 /* Build configuration list for PBXNativeTarget "StreetHistory" */;
+			buildConfigurationList = D97D81B02F3BE49A00933D15 /* Build configuration list for PBXNativeTarget "StreetHistory" */;
 			buildPhases = (
-				D916B2F82F3AAD5500710809 /* Sources */,
-				D916B2F92F3AAD5500710809 /* Frameworks */,
-				D916B2FA2F3AAD5500710809 /* Resources */,
+				D97D81A12F3BE49800933D15 /* Sources */,
+				D97D81A22F3BE49800933D15 /* Frameworks */,
+				D97D81A32F3BE49800933D15 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				D916B2FE2F3AAD5500710809 /* StreetHistory */,
+				D97D81A72F3BE49800933D15 /* StreetHistory */,
 			);
 			name = StreetHistory;
 			packageProductDependencies = (
 			);
 			productName = StreetHistory;
-			productReference = D916B2FC2F3AAD5500710809 /* StreetHistory.app */;
+			productReference = D97D81A52F3BE49800933D15 /* StreetHistory.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		D916B2F42F3AAD5500710809 /* Project object */ = {
+		D97D819D2F3BE49800933D15 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
-					D916B2FB2F3AAD5500710809 = {
+					D97D81A42F3BE49800933D15 = {
 						CreatedOnToolsVersion = 26.2;
+						LastSwiftMigration = 2620;
 					};
 				};
 			};
-			buildConfigurationList = D916B2F72F3AAD5500710809 /* Build configuration list for PBXProject "StreetHistory" */;
+			buildConfigurationList = D97D81A02F3BE49800933D15 /* Build configuration list for PBXProject "StreetHistory" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = D916B2F32F3AAD5500710809;
+			mainGroup = D97D819C2F3BE49800933D15;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = D916B2FD2F3AAD5500710809 /* Products */;
+			productRefGroup = D97D81A62F3BE49800933D15 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D916B2FB2F3AAD5500710809 /* StreetHistory */,
+				D97D81A42F3BE49800933D15 /* StreetHistory */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		D916B2FA2F3AAD5500710809 /* Resources */ = {
+		D97D81A32F3BE49800933D15 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +129,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		D916B2F82F3AAD5500710809 /* Sources */ = {
+		D97D81A12F3BE49800933D15 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -125,7 +139,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		D916B3052F3AAD5800710809 /* Debug */ = {
+		D97D81AE2F3BE49A00933D15 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -188,7 +202,7 @@
 			};
 			name = Debug;
 		};
-		D916B3062F3AAD5800710809 /* Release */ = {
+		D97D81AF2F3BE49A00933D15 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -244,17 +258,18 @@
 			};
 			name = Release;
 		};
-		D916B3082F3AAD5800710809 /* Debug */ = {
+		D97D81B12F3BE49A00933D15 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StreetHistory/Info.plist;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Show street history and nearby context.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StreetHistory uses your location to show the street you’re on and a nearby “did you know?” fact.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -271,23 +286,25 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		D916B3092F3AAD5800710809 /* Release */ = {
+		D97D81B22F3BE49A00933D15 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StreetHistory/Info.plist;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Show street history and nearby context.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StreetHistory uses your location to show the street you’re on and a nearby “did you know?” fact.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -313,25 +330,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D916B2F72F3AAD5500710809 /* Build configuration list for PBXProject "StreetHistory" */ = {
+		D97D81A02F3BE49800933D15 /* Build configuration list for PBXProject "StreetHistory" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D916B3052F3AAD5800710809 /* Debug */,
-				D916B3062F3AAD5800710809 /* Release */,
+				D97D81AE2F3BE49A00933D15 /* Debug */,
+				D97D81AF2F3BE49A00933D15 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D916B3072F3AAD5800710809 /* Build configuration list for PBXNativeTarget "StreetHistory" */ = {
+		D97D81B02F3BE49A00933D15 /* Build configuration list for PBXNativeTarget "StreetHistory" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D916B3082F3AAD5800710809 /* Debug */,
-				D916B3092F3AAD5800710809 /* Release */,
+				D97D81B12F3BE49A00933D15 /* Debug */,
+				D97D81B22F3BE49A00933D15 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = D916B2F42F3AAD5500710809 /* Project object */;
+	rootObject = D97D819D2F3BE49800933D15 /* Project object */;
 }
