@@ -104,3 +104,5 @@ pnpm-debug.log*
 *.tgz
 
 infra/.env
+.DS_Store
+**/.DS_Store
