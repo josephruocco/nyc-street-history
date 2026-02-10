@@ -1,0 +1,104 @@
+# =====================
+# macOS
+# =====================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# =====================
+# Git / editor
+# =====================
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# =====================
+# Python / FastAPI
+# =====================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.dist/
+.build/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+*.log
+
+# =====================
+# Docker / Compose
+# =====================
+pgdata/
+docker-data/
+*.pid
+
+# =====================
+# Secrets / keys
+# =====================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# =====================
+# iOS / Xcode
+# =====================
+# Build artifacts
+DerivedData/
+build/
+*.xcarchive/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# User-specific Xcode files
+*.xcuserstate
+*.xcuserdata/
+UserInterfaceState.xcuserstate
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Keep project + workspace files tracked
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/project.xcworkspace/
+!*.xcodeproj/xcshareddata/
+
+# If you prefer to track the whole .xcodeproj, delete the 3 lines above.
+
+# =====================
+# Node (if you add later)
+# =====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =====================
+# Archives
+# =====================
+*.zip
+*.tar.gz
+*.tgz
