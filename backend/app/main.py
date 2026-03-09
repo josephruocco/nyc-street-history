@@ -65,7 +65,7 @@ def card(lat: float, lon: float, acc: float = 25.0):
     street = fetch_one(SNAP_STREET_SQL, {"lat": lat, "lon": lon, "radius_m": radius_m})
     if not street:
         raise HTTPException(status_code=404, detail="No street segment found nearby")
-    cross = fetch_one(CROSS_STREET_SQL, {"segment_id": street["id"]})
+    cross = fetch_one(CROSS_STREET_SQL, {"segment_id": street["id"], "lat": lat, "lon": lon})
 
     neighborhood = fetch_one(NEIGHBORHOOD_SQL, {"lat": lat, "lon": lon})
     nearby = fetch_all(NEARBY_POI_SQL, {"lat": lat, "lon": lon, "radius_m": 800, "limit_n": 6})

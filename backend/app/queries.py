@@ -72,21 +72,35 @@ LIMIT 1;
 
 CROSS_STREET_SQL = """
 WITH main AS (
-  SELECT id, geom
+  SELECT id, primary_name, geom
   FROM street_segment
   WHERE id = :segment_id
+),
+user_p AS (
+  SELECT ST_SetSRID(ST_MakePoint(:lon, :lat), 4326) AS pt
+),
+candidates AS (
+  SELECT
+    s.id,
+    s.primary_name,
+    s.borough,
+    ST_ClosestPoint(ST_Intersection(s.geom, m.geom), u.pt) AS ix_point,
+    u.pt AS user_pt
+  FROM street_segment s
+  JOIN main m ON s.id <> m.id
+  CROSS JOIN user_p u
+  WHERE s.primary_name IS NOT NULL
+    AND ST_Intersects(s.geom, m.geom)
+    AND UPPER(BTRIM(s.primary_name)) <> UPPER(BTRIM(m.primary_name))
 )
 SELECT
-  s.id,
-  s.primary_name,
-  s.borough
-FROM street_segment s
-JOIN main m ON s.id <> m.id
-WHERE s.primary_name IS NOT NULL
-  AND ST_Intersects(s.geom, m.geom)
+  id,
+  primary_name,
+  borough
+FROM candidates
 ORDER BY
-  CASE WHEN s.primary_name = (SELECT primary_name FROM street_segment WHERE id = :segment_id) THEN 1 ELSE 0 END,
-  s.id
+  ST_Distance(ix_point::geography, user_pt::geography),
+  id
 LIMIT 1;
 """
 
@@ -258,47 +272,3 @@ def build_card_autosession(lat: float, lon: float, acc: float) -> Dict[str, Any]
         return build_card(db, lat=lat, lon=lon, acc=acc)
     finally:
         db.close()
-SNAP_STREET_SQL = """
-WITH p AS (
-  SELECT ST_SetSRID(ST_MakePoint(:lon, :lat), 4326) AS pt
-)
-SELECT
-  id,
-  street_code,
-  primary_name,
-  borough,
-  ROUND(ST_Distance(geom::geography, p.pt::geography))::int AS dist_m
-FROM street_segment, p
-WHERE ST_DWithin(geom::geography, p.pt::geography, :radius_m)
-ORDER BY ST_Distance(geom::geography, p.pt::geography)
-LIMIT 1;
-"""
-
-NEIGHBORHOOD_SQL = """
-SELECT name
-FROM neighborhood
-WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326))
-LIMIT 1;
-"""
-
-NEARBY_POI_SQL = """
-WITH p AS (
-  SELECT ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography AS g
-)
-SELECT
-  name,
-  category,
-  ROUND(ST_Distance(geom::geography, p.g))::int AS distance_m
-FROM poi, p
-WHERE ST_DWithin(geom::geography, p.g, :radius_m)
-ORDER BY (rank_score * 1000.0) - ST_Distance(geom::geography, p.g) DESC
-LIMIT :limit_n;
-"""
-
-FACT_BY_STREETCODE_SQL = """
-SELECT fact_text, source_label, source_url, confidence
-FROM fact
-WHERE key_type = 'street_code' AND key_value = :street_code
-ORDER BY confidence DESC, updated_at DESC
-LIMIT 1;
-"""
