@@ -51,14 +51,37 @@ LIMIT 1;
 NEARBY_POI_SQL = """
 WITH p AS (
   SELECT ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography AS g
+),
+candidates AS (
+  SELECT
+    name,
+    CASE
+      WHEN LOWER(category) IN ('park', 'playground', 'garden') THEN 'park'
+      WHEN LOWER(category) IN ('landmark', 'historic', 'museum', 'monument') THEN 'landmark'
+      WHEN LOWER(category) IN ('transit', 'subway', 'bus', 'train', 'ferry') THEN 'transit'
+      WHEN LOWER(category) IN ('food', 'restaurant', 'cafe', 'bar', 'bakery') THEN 'food'
+      ELSE NULL
+    END AS category,
+    rank_score,
+    ST_Distance(geom::geography, p.g) AS dist_m
+  FROM poi, p
+  WHERE ST_DWithin(geom::geography, p.g, :radius_m)
 )
 SELECT
   name,
   category,
-  ROUND(ST_Distance(geom::geography, p.g))::int AS distance_m
-FROM poi, p
-WHERE ST_DWithin(geom::geography, p.g, :radius_m)
-ORDER BY (rank_score * 1000.0) - ST_Distance(geom::geography, p.g) DESC
+  ROUND(dist_m)::int AS distance_m
+FROM candidates
+WHERE category IS NOT NULL
+ORDER BY
+  CASE category
+    WHEN 'landmark' THEN 1
+    WHEN 'park' THEN 2
+    WHEN 'transit' THEN 3
+    WHEN 'food' THEN 4
+    ELSE 5
+  END,
+  (rank_score * 1000.0) - dist_m DESC
 LIMIT :limit_n;
 """
 
