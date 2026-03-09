@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from urllib.request import Request, urlopen
 
 
 BASE_URL = "https://data.cityofnewyork.us/resource"
+POINT_WKT_RE = re.compile(r"POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -107,6 +109,41 @@ def _point_from_location_obj(value: Any) -> tuple[float, float] | None:
     return None
 
 
+def _normalize_lat_lon(lat: float | None, lon: float | None) -> tuple[float, float] | None:
+    if lat is None or lon is None:
+        return None
+    if -90 <= lat <= 90 and -180 <= lon <= 180:
+        return lat, lon
+    return None
+
+
+def _point_from_wkt(value: Any) -> tuple[float, float] | None:
+    if not isinstance(value, str):
+        return None
+    match = POINT_WKT_RE.search(value)
+    if not match:
+        return None
+    lon = _safe_float(match.group(1))
+    lat = _safe_float(match.group(2))
+    return _normalize_lat_lon(lat, lon)
+
+
+def _point_from_lat_lon_map(value: Any) -> tuple[float, float] | None:
+    if not isinstance(value, dict):
+        return None
+
+    lat_keys = ("latitude", "lat", "y", "y_coordinate", "ycoord")
+    lon_keys = ("longitude", "lon", "lng", "x", "x_coordinate", "xcoord")
+    for lat_key in lat_keys:
+        for lon_key in lon_keys:
+            lat = _safe_float(value.get(lat_key))
+            lon = _safe_float(value.get(lon_key))
+            pt = _normalize_lat_lon(lat, lon)
+            if pt is not None:
+                return pt
+    return None
+
+
 def _flatten_points(geom_type: str, coords: Any) -> list[tuple[float, float]]:
     points: list[tuple[float, float]] = []
 
@@ -143,38 +180,94 @@ def _point_from_geojson_obj(value: Any) -> tuple[float, float] | None:
     return lat, lon
 
 
-def extract_lat_lon(row: dict[str, Any]) -> tuple[float, float] | None:
+def _find_point_recursive(value: Any) -> tuple[float, float] | None:
+    # Direct pattern checks first
+    for extractor in (_point_from_location_obj, _point_from_lat_lon_map, _point_from_geojson_obj, _point_from_wkt):
+        pt = extractor(value)
+        if pt is not None:
+            return pt
+
+    # Walk containers for nested coordinate objects.
+    if isinstance(value, dict):
+        for nested in value.values():
+            pt = _find_point_recursive(nested)
+            if pt is not None:
+                return pt
+    elif isinstance(value, list):
+        for nested in value:
+            pt = _find_point_recursive(nested)
+            if pt is not None:
+                return pt
+    return None
+
+
+def extract_lat_lon(row: dict[str, Any], source: SourceConfig) -> tuple[float, float] | None:
     for lat_key, lon_key in (
         ("latitude", "longitude"),
         ("lat", "lon"),
         ("lat", "lng"),
         ("y", "x"),
+        ("y_coordinate", "x_coordinate"),
+        ("ycoord", "xcoord"),
     ):
         lat = _safe_float(row.get(lat_key))
         lon = _safe_float(row.get(lon_key))
-        if lat is not None and lon is not None:
-            if -90 <= lat <= 90 and -180 <= lon <= 180:
-                return lat, lon
-
-    for key in ("location", "point", "georeference", "the_geom"):
-        pt = _point_from_location_obj(row.get(key))
-        if pt is None:
-            pt = _point_from_geojson_obj(row.get(key))
+        pt = _normalize_lat_lon(lat, lon)
         if pt is not None:
-            lat, lon = pt
-            if -90 <= lat <= 90 and -180 <= lon <= 180:
-                return lat, lon
+            return pt
+
+    # Check commonly geocoded fields first.
+    for key in ("location", "point", "georeference", "the_geom", "geocoded_column", "shape"):
+        pt = _find_point_recursive(row.get(key))
+        if pt is not None:
+            return pt
+
+    # Last resort: deep walk across all values.
+    for value in row.values():
+        pt = _find_point_recursive(value)
+        if pt is not None:
+            return pt
 
     return None
 
 
+def _clean_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text else None
+
+
 def pick_name(row: dict[str, Any], candidates: tuple[str, ...]) -> str | None:
     for field in candidates:
-        value = row.get(field)
-        if value is not None:
-            text = str(value).strip()
+        text = _clean_text(row.get(field))
+        if text:
+            return text
+
+    # Common schema variants across NYC/NYS Socrata datasets.
+    for field in (
+        "site_name",
+        "park_name",
+        "landmark_name",
+        "station",
+        "station_name",
+        "name",
+        "title",
+        "dba",
+        "facility_name",
+    ):
+        text = _clean_text(row.get(field))
+        if text:
+            return text
+
+    # Last resort: any field containing "name" or "title".
+    for key, value in row.items():
+        lowered = key.lower()
+        if "name" in lowered or "title" in lowered:
+            text = _clean_text(value)
             if text:
                 return text
+
     return None
 
 
@@ -255,13 +348,20 @@ def build_features(*, sources: tuple[SourceConfig, ...], app_token: str | None, 
             continue
 
         loaded_sources += 1
+        total_rows = len(rows)
+        missing_name = 0
+        missing_coords = 0
+        kept = 0
+
         for row in rows:
             name = pick_name(row, source.name_fields)
             if not name:
+                missing_name += 1
                 continue
 
-            coords = extract_lat_lon(row)
+            coords = extract_lat_lon(row, source)
             if coords is None:
+                missing_coords += 1
                 continue
             lat, lon = coords
 
@@ -269,6 +369,7 @@ def build_features(*, sources: tuple[SourceConfig, ...], app_token: str | None, 
             if key in seen:
                 continue
             seen.add(key)
+            kept += 1
 
             features.append(
                 {
@@ -283,6 +384,25 @@ def build_features(*, sources: tuple[SourceConfig, ...], app_token: str | None, 
                     },
                 }
             )
+        print(
+            f"[info] source={source.label} dataset={source.dataset_id} "
+            f"rows={total_rows} kept={kept} missing_name={missing_name} missing_coords={missing_coords}"
+        )
+        if rows and kept == 0 and missing_name == total_rows:
+            sample = rows[0]
+            keys = sorted(sample.keys())
+            name_like_keys = [k for k in keys if "name" in k.lower() or "title" in k.lower()]
+            print(f"[debug] source={source.label} keys={keys[:40]}")
+            print(f"[debug] source={source.label} name_like_keys={name_like_keys}")
+            sample_text_fields = []
+            for k, v in sample.items():
+                if isinstance(v, str):
+                    t = v.strip()
+                    if t:
+                        sample_text_fields.append((k, t[:80]))
+                if len(sample_text_fields) >= 10:
+                    break
+            print(f"[debug] source={source.label} sample_text_fields={sample_text_fields}")
 
     print(f"[info] loaded {loaded_sources}/{len(sources)} sources")
     return {"type": "FeatureCollection", "features": features}
