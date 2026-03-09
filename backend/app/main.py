@@ -14,6 +14,8 @@ from .queries import (
 app = FastAPI(title="NYC Street History API")
 
 NUMBERED_PAT = re.compile(r"^(E|W)\s*\d+|^\d+(st|nd|rd|th)\b", re.IGNORECASE)
+ORDINAL_PAT = re.compile(r"^(\d+)(ST|ND|RD|TH)$", re.IGNORECASE)
+
 
 def prettify_street_name(name: str | None) -> str | None:
     if not name:
@@ -21,12 +23,25 @@ def prettify_street_name(name: str | None) -> str | None:
 
     words = name.strip().split()
     out = []
+    directional_map = {
+        "N": "North",
+        "S": "South",
+        "E": "East",
+        "W": "West",
+        "NE": "Northeast",
+        "NW": "Northwest",
+        "SE": "Southeast",
+        "SW": "Southwest",
+    }
 
     for w in words:
         upper = w.upper()
+        ordinal_match = ORDINAL_PAT.match(upper)
 
-        if upper in {"N", "S", "E", "W", "NE", "NW", "SE", "SW"}:
-            out.append(upper)
+        if ordinal_match:
+            out.append(f"{ordinal_match.group(1)}{ordinal_match.group(2).lower()}")
+        elif upper in directional_map:
+            out.append(directional_map[upper])
         elif upper in {"ST", "AVE", "AV", "RD", "DR", "PL", "CT", "BLVD", "PKWY", "TER", "LN", "WAY"}:
             out.append(upper.title())
         elif upper.isdigit():
@@ -48,10 +63,9 @@ def card(lat: float, lon: float, acc: float = 25.0):
     radius_m = max(40, min(int(acc * 2.0), 120))
 
     street = fetch_one(SNAP_STREET_SQL, {"lat": lat, "lon": lon, "radius_m": radius_m})
-    cross = fetch_one(CROSS_STREET_SQL, {"segment_id": street["id"]})
-    
     if not street:
         raise HTTPException(status_code=404, detail="No street segment found nearby")
+    cross = fetch_one(CROSS_STREET_SQL, {"segment_id": street["id"]})
 
     neighborhood = fetch_one(NEIGHBORHOOD_SQL, {"lat": lat, "lon": lon})
     nearby = fetch_all(NEARBY_POI_SQL, {"lat": lat, "lon": lon, "radius_m": 800, "limit_n": 6})
