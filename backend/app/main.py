@@ -19,6 +19,13 @@ ORDINAL_PAT = re.compile(r"^(\d+)(ST|ND|RD|TH)$", re.IGNORECASE)
 CARD_CACHE_TTL_SECONDS = 45
 CARD_CACHE_PRECISION = 6
 CARD_CACHE = SimpleTTLCache()
+POI_TOTAL_SQL = "SELECT COUNT(*)::int AS total FROM poi;"
+POI_COUNTS_SQL = """
+SELECT category, COUNT(*)::int AS n
+FROM poi
+GROUP BY category
+ORDER BY category;
+"""
 
 
 def prettify_street_name(name: str | None) -> str | None:
@@ -111,3 +118,11 @@ def card(lat: float, lon: float, acc: float = 25.0):
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/health/poi")
+def health_poi():
+    total_row = fetch_one(POI_TOTAL_SQL, {}) or {"total": 0}
+    category_rows = fetch_all(POI_COUNTS_SQL, {})
+    by_category = {row["category"]: row["n"] for row in category_rows}
+    return {"ok": True, "poi": {"total": total_row["total"], "by_category": by_category}}
