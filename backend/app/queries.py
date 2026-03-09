@@ -66,22 +66,45 @@ candidates AS (
     ST_Distance(geom::geography, p.g) AS dist_m
   FROM poi, p
   WHERE ST_DWithin(geom::geography, p.g, :radius_m)
+),
+scored AS (
+  SELECT
+    name,
+    category,
+    dist_m,
+    (rank_score * 1000.0) - dist_m AS score,
+    CASE category
+      WHEN 'landmark' THEN 1
+      WHEN 'park' THEN 2
+      WHEN 'transit' THEN 3
+      WHEN 'food' THEN 4
+      ELSE 5
+    END AS category_priority
+  FROM candidates
+  WHERE category IS NOT NULL
+),
+ranked AS (
+  SELECT
+    name,
+    category,
+    dist_m,
+    score,
+    category_priority,
+    ROW_NUMBER() OVER (
+      PARTITION BY category
+      ORDER BY score DESC
+    ) AS category_rank
+  FROM scored
 )
 SELECT
   name,
   category,
   ROUND(dist_m)::int AS distance_m
-FROM candidates
-WHERE category IS NOT NULL
+FROM ranked
 ORDER BY
-  CASE category
-    WHEN 'landmark' THEN 1
-    WHEN 'park' THEN 2
-    WHEN 'transit' THEN 3
-    WHEN 'food' THEN 4
-    ELSE 5
-  END,
-  (rank_score * 1000.0) - dist_m DESC
+  category_rank,
+  category_priority,
+  score DESC
 LIMIT :limit_n;
 """
 

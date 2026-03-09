@@ -14,13 +14,22 @@ SPEC.loader.exec_module(MODULE)
 
 
 class BuildNycPoiHelpersTests(unittest.TestCase):
+    def setUp(self):
+        self.default_source = MODULE.SourceConfig(
+            dataset_id="x",
+            category="park",
+            label="test_source",
+            name_fields=("name",),
+            rank_score=1.0,
+        )
+
     def test_extract_lat_lon_from_direct_fields(self):
         row = {"latitude": "40.7128", "longitude": "-74.0060"}
-        self.assertEqual(MODULE.extract_lat_lon(row), (40.7128, -74.006))
+        self.assertEqual(MODULE.extract_lat_lon(row, self.default_source), (40.7128, -74.006))
 
     def test_extract_lat_lon_from_location_object(self):
         row = {"location": {"latitude": "40.7", "longitude": "-73.9"}}
-        self.assertEqual(MODULE.extract_lat_lon(row), (40.7, -73.9))
+        self.assertEqual(MODULE.extract_lat_lon(row, self.default_source), (40.7, -73.9))
 
     def test_extract_lat_lon_from_geojson_polygon(self):
         row = {
@@ -29,13 +38,25 @@ class BuildNycPoiHelpersTests(unittest.TestCase):
                 "coordinates": [[[-74.0, 40.7], [-73.9, 40.7], [-73.9, 40.8], [-74.0, 40.8], [-74.0, 40.7]]],
             }
         }
-        lat, lon = MODULE.extract_lat_lon(row)
+        lat, lon = MODULE.extract_lat_lon(row, self.default_source)
         self.assertTrue(40.7 <= lat <= 40.8)
         self.assertTrue(-74.0 <= lon <= -73.9)
+
+    def test_extract_lat_lon_from_wkt_string(self):
+        row = {"the_geom": "POINT (-73.9857 40.7484)"}
+        self.assertEqual(MODULE.extract_lat_lon(row, self.default_source), (40.7484, -73.9857))
+
+    def test_extract_lat_lon_from_nested_object(self):
+        row = {"meta": {"shape": {"location": {"latitude": "40.75", "longitude": "-73.99"}}}}
+        self.assertEqual(MODULE.extract_lat_lon(row, self.default_source), (40.75, -73.99))
 
     def test_pick_name_prefers_first_non_empty_candidate(self):
         row = {"name": "", "station_name": "Bedford Ave"}
         self.assertEqual(MODULE.pick_name(row, ("name", "station_name")), "Bedford Ave")
+
+    def test_pick_name_falls_back_to_any_name_like_field(self):
+        row = {"foo": "x", "propertyname": "McCarren Park"}
+        self.assertEqual(MODULE.pick_name(row, ("name", "station_name")), "McCarren Park")
 
     def test_dedupe_key_uses_dedupe_field_when_present(self):
         source = MODULE.SourceConfig(

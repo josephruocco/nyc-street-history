@@ -23,9 +23,9 @@ class NearbyPoiSqlRegressionTests(unittest.TestCase):
     def test_filters_unknown_categories(self):
         self.assertIn("WHERE CATEGORY IS NOT NULL", self.sql)
 
-    def test_prioritizes_categories_before_score_distance(self):
-        self.assertIn("ORDER BY CASE CATEGORY WHEN 'LANDMARK' THEN 1 WHEN 'PARK' THEN 2 WHEN 'TRANSIT' THEN 3 WHEN 'FOOD' THEN 4 ELSE 5 END", self.sql)
-        self.assertIn("(RANK_SCORE * 1000.0) - DIST_M DESC", self.sql)
+    def test_uses_per_category_rank_for_balanced_results(self):
+        self.assertIn("ROW_NUMBER() OVER ( PARTITION BY CATEGORY ORDER BY SCORE DESC ) AS CATEGORY_RANK", self.sql)
+        self.assertIn("ORDER BY CATEGORY_RANK, CATEGORY_PRIORITY, SCORE DESC", self.sql)
 
 
 if __name__ == "__main__":
