@@ -52,6 +52,11 @@ struct ContentView: View {
                         Text(card.canonical_street ?? "Unknown street")
                             .font(.title2).bold()
 
+                        if let cross = card.cross_street, !cross.isEmpty {
+                            Text("at \(cross)")
+                                .foregroundStyle(.secondary)
+                        }
+
                         if let sub = subtitleLine {
                             Text(sub)
                                 .foregroundStyle(.secondary)

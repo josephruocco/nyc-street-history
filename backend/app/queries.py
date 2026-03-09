@@ -70,6 +70,25 @@ ORDER BY confidence DESC, updated_at DESC
 LIMIT 1;
 """
 
+CROSS_STREET_SQL = """
+WITH main AS (
+  SELECT id, geom
+  FROM street_segment
+  WHERE id = :segment_id
+)
+SELECT
+  s.id,
+  s.primary_name,
+  s.borough
+FROM street_segment s
+JOIN main m ON s.id <> m.id
+WHERE s.primary_name IS NOT NULL
+  AND ST_Intersects(s.geom, m.geom)
+ORDER BY
+  CASE WHEN s.primary_name = (SELECT primary_name FROM street_segment WHERE id = :segment_id) THEN 1 ELSE 0 END,
+  s.id
+LIMIT 1;
+"""
 
 # -----------------------------
 # Street name classification

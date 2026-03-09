@@ -3,11 +3,38 @@ from fastapi import FastAPI, HTTPException
 
 from .db import fetch_one, fetch_all
 from .models import CardResponse, NearbyItem, Source
-from .queries import SNAP_STREET_SQL, NEIGHBORHOOD_SQL, NEARBY_POI_SQL, FACT_BY_STREETCODE_SQL
+from .queries import (
+    SNAP_STREET_SQL,
+    NEIGHBORHOOD_SQL,
+    NEARBY_POI_SQL,
+    FACT_BY_STREETCODE_SQL,
+    CROSS_STREET_SQL,
+)
 
 app = FastAPI(title="NYC Street History API")
 
 NUMBERED_PAT = re.compile(r"^(E|W)\s*\d+|^\d+(st|nd|rd|th)\b", re.IGNORECASE)
+
+def prettify_street_name(name: str | None) -> str | None:
+    if not name:
+        return name
+
+    words = name.strip().split()
+    out = []
+
+    for w in words:
+        upper = w.upper()
+
+        if upper in {"N", "S", "E", "W", "NE", "NW", "SE", "SW"}:
+            out.append(upper)
+        elif upper in {"ST", "AVE", "AV", "RD", "DR", "PL", "CT", "BLVD", "PKWY", "TER", "LN", "WAY"}:
+            out.append(upper.title())
+        elif upper.isdigit():
+            out.append(upper)
+        else:
+            out.append(upper.title())
+
+    return " ".join(out)
 
 def classify_mode(street_name: str | None) -> str:
     if not street_name:
@@ -21,6 +48,8 @@ def card(lat: float, lon: float, acc: float = 25.0):
     radius_m = max(40, min(int(acc * 2.0), 120))
 
     street = fetch_one(SNAP_STREET_SQL, {"lat": lat, "lon": lon, "radius_m": radius_m})
+    cross = fetch_one(CROSS_STREET_SQL, {"segment_id": street["id"]})
+    
     if not street:
         raise HTTPException(status_code=404, detail="No street segment found nearby")
 
@@ -41,8 +70,8 @@ def card(lat: float, lon: float, acc: float = 25.0):
         did_you_know = f"You’re in {neighborhood['name']}. Check nearby landmarks for context."
 
     return CardResponse(
-        canonical_street=street.get("primary_name"),
-        cross_street=None,
+        canonical_street=prettify_street_name(street.get("primary_name")),
+        cross_street=prettify_street_name(cross.get("primary_name")) if cross else None,
         borough=street.get("borough"),
         neighborhood=neighborhood["name"] if neighborhood else None,
         mode=mode,
