@@ -1,6 +1,7 @@
 import re
 from fastapi import FastAPI, HTTPException
 
+from .cache import SimpleTTLCache, encode_geohash
 from .db import fetch_one, fetch_all
 from .models import CardResponse, NearbyItem, Source
 from .queries import (
@@ -15,6 +16,9 @@ app = FastAPI(title="NYC Street History API")
 
 NUMBERED_PAT = re.compile(r"^(E|W)\s*\d+|^\d+(st|nd|rd|th)\b", re.IGNORECASE)
 ORDINAL_PAT = re.compile(r"^(\d+)(ST|ND|RD|TH)$", re.IGNORECASE)
+CARD_CACHE_TTL_SECONDS = 45
+CARD_CACHE_PRECISION = 6
+CARD_CACHE = SimpleTTLCache()
 
 
 def prettify_street_name(name: str | None) -> str | None:
@@ -60,6 +64,11 @@ def classify_mode(street_name: str | None) -> str:
 
 @app.get("/v1/card", response_model=CardResponse)
 def card(lat: float, lon: float, acc: float = 25.0):
+    cache_key = f"card:{encode_geohash(lat, lon, precision=CARD_CACHE_PRECISION)}"
+    cached = CARD_CACHE.get(cache_key)
+    if cached is not None:
+        return CardResponse(**cached)
+
     radius_m = max(40, min(int(acc * 2.0), 120))
 
     street = fetch_one(SNAP_STREET_SQL, {"lat": lat, "lon": lon, "radius_m": radius_m})
@@ -83,7 +92,7 @@ def card(lat: float, lon: float, acc: float = 25.0):
     if not did_you_know and neighborhood:
         did_you_know = f"You’re in {neighborhood['name']}. Check nearby landmarks for context."
 
-    return CardResponse(
+    response = CardResponse(
         canonical_street=prettify_street_name(street.get("primary_name")),
         cross_street=prettify_street_name(cross.get("primary_name")) if cross else None,
         borough=street.get("borough"),
@@ -93,6 +102,11 @@ def card(lat: float, lon: float, acc: float = 25.0):
         nearby=[NearbyItem(**n) for n in nearby],
         sources=sources,
     )
+    if hasattr(response, "model_dump"):
+        CARD_CACHE.set(cache_key, response.model_dump(), ttl_seconds=CARD_CACHE_TTL_SECONDS)
+    else:
+        CARD_CACHE.set(cache_key, response.dict(), ttl_seconds=CARD_CACHE_TTL_SECONDS)
+    return response
 
 @app.get("/health")
 def health():
