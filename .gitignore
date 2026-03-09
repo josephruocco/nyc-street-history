@@ -103,4 +103,4 @@ pnpm-debug.log*
 *.tar.gz
 *.tgz
 
-infra/.env
+infra/.env.DS_Store
