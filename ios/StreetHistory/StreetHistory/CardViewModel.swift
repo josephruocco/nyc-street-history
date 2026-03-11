@@ -6,11 +6,12 @@ import CoreLocation
 final class CardViewModel: ObservableObject {
     @Published var card: CardResponse?
     @Published var errorText: String?
+    @Published var lastUpdatedAt: Date?
 
     private let api = APIClient()
     private var lastFetchTime: Date = .distantPast
 
-    private let cacheKey = "last_card_v1"
+    private let cacheKey = "last_card_v2"
 
     init() {
         // Load cached card on startup
@@ -18,6 +19,14 @@ final class CardViewModel: ObservableObject {
            let cached = try? JSONDecoder().decode(CardResponse.self, from: data) {
             self.card = cached
         }
+    }
+
+    var lastUpdatedText: String? {
+        guard let lastUpdatedAt else { return nil }
+
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return "Updated \(formatter.localizedString(for: lastUpdatedAt, relativeTo: Date()))"
     }
 
     func update(for location: CLLocation) async {
@@ -34,6 +43,7 @@ final class CardViewModel: ObservableObject {
             )
             card = res
             errorText = nil
+            lastUpdatedAt = now
             persist(res)
         } catch {
             // Keep cached card; show error
