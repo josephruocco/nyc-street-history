@@ -13,13 +13,13 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     @Published var significantLocation: CLLocation?
 
     private var lastSignificant: CLLocation?
-    private let gateMeters: CLLocationDistance = 40
+    private let gateMeters: CLLocationDistance = 15
 
     override init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.distanceFilter = 10
+        manager.distanceFilter = 5
     }
 
     func requestPermissionAndStart() {

@@ -21,6 +21,10 @@ class ImportFactsCsvTests(unittest.TestCase):
         key = MODULE.normalize_key({"key_type": "street_code", "key_value": "366530"})
         self.assertEqual(key, ("street_code", "366530"))
 
+    def test_normalize_key_place_name_lowercases_and_squashes_spaces(self):
+        key = MODULE.normalize_key({"key_type": "place_name", "key_value": "  Union   Square   Park  "})
+        self.assertEqual(key, ("place_name", "union square park"))
+
     def test_row_to_params_rejects_missing_fact_text(self):
         params = MODULE.row_to_params({"key_type": "street_code", "key_value": "1", "fact_text": ""})
         self.assertIsNone(params)

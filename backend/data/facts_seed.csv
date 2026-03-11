@@ -1,0 +1,5 @@
+key_type,key_value,fact_text,source_label,source_url,confidence
+street_name,broadway,"Broadway follows an older Native path through Manhattan; colonial New York widened that route into one of the city's defining north-south roads.",NPS African Burial Ground,https://www.nps.gov/afbg/planyourvisit/african-american-freedom-trail.htm,0.84
+street_name,wall street,"Wall Street takes its name from the defensive wall the Dutch built across northern New Amsterdam in 1653.",NYC Department of Records,https://www.archives.nyc/blog/2017/2/23/the-dutch-the-english-part-2-a-wall-by-any-other-name,0.87
+street_name,bowery,"The Bowery grew from a route to Peter Stuyvesant's farm and remains one of Manhattan's oldest roads.",Encyclopaedia Britannica,https://www.britannica.com/place/the-Bowery,0.81
+place_name,union square park,"Union Square Park opened in 1839 and became a long-running civic gathering ground, from the first Labor Day parade in 1882 to later protests and rallies.",NYC Parks,https://www2.nycgovparks.org/parks/unionsquarepark,0.9

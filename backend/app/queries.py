@@ -124,6 +124,14 @@ ORDER BY confidence DESC, updated_at DESC
 LIMIT 1;
 """
 
+FACT_BY_PLACENAME_SQL = """
+SELECT fact_text, source_label, source_url, confidence
+FROM fact
+WHERE key_type = 'place_name' AND LOWER(BTRIM(key_value)) = :place_name
+ORDER BY confidence DESC, updated_at DESC
+LIMIT 1;
+"""
+
 CROSS_STREET_SQL = """
 WITH main AS (
   SELECT id, primary_name, geom

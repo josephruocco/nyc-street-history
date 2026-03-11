@@ -2,7 +2,7 @@
 """Import street facts from CSV into fact table.
 
 CSV columns:
-- key_type (required): street_code | street_name
+- key_type (required): street_code | street_name | place_name
 - key_value (required)
 - fact_text (required)
 - source_label (optional)
@@ -45,12 +45,12 @@ def normalize_key(row: dict) -> tuple[str, str] | None:
     key_type = (row.get("key_type") or "").strip().lower()
     key_value = (row.get("key_value") or "").strip()
 
-    if key_type not in {"street_code", "street_name"}:
+    if key_type not in {"street_code", "street_name", "place_name"}:
         return None
     if not key_value:
         return None
 
-    if key_type == "street_name":
+    if key_type in {"street_name", "place_name"}:
         key_value = " ".join(key_value.split()).lower()
 
     return key_type, key_value

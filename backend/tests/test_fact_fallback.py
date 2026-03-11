@@ -20,6 +20,11 @@ class FactFallbackSqlRegressionTests(unittest.TestCase):
         self.assertIn("WHERE KEY_TYPE = 'STREET_NAME'", self.queries)
         self.assertIn("LOWER(BTRIM(KEY_VALUE)) = :STREET_NAME", self.queries)
 
+    def test_has_fact_by_place_name_sql(self):
+        self.assertIn("FACT_BY_PLACENAME_SQL", self.queries)
+        self.assertIn("WHERE KEY_TYPE = 'PLACE_NAME'", self.queries)
+        self.assertIn("LOWER(BTRIM(KEY_VALUE)) = :PLACE_NAME", self.queries)
+
 
 class FactFallbackWiringRegressionTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -28,8 +33,14 @@ class FactFallbackWiringRegressionTests(unittest.TestCase):
     def test_normalize_fact_street_name_exists(self):
         self.assertIn("DEF NORMALIZE_FACT_STREET_NAME(STREET_NAME: STR | NONE) -> STR | NONE:", self.main_source)
 
+    def test_normalize_fact_place_name_exists(self):
+        self.assertIn("DEF NORMALIZE_FACT_PLACE_NAME(PLACE_NAME: STR | NONE) -> STR | NONE:", self.main_source)
+
     def test_card_falls_back_to_fact_by_street_name(self):
         self.assertIn("FACT = FETCH_ONE(FACT_BY_STREETNAME_SQL, {\"STREET_NAME\": NORMALIZED_STREET})", self.main_source)
+
+    def test_card_falls_back_to_fact_by_place_name(self):
+        self.assertIn("FACT = FETCH_ONE(FACT_BY_PLACENAME_SQL, {\"PLACE_NAME\": NORMALIZED_PLACE})", self.main_source)
 
 
 if __name__ == "__main__":
