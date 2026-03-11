@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: nyc-street-history-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CARD_CACHE_TTL_SECONDS
+        value: "45"
+      - key: CARD_CACHE_PRECISION
+        value: "6"
