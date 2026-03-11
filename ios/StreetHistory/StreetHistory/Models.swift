@@ -1,5 +1,10 @@
 import Foundation
 
+struct FactSource: Codable {
+    let label: String?
+    let url: String?
+}
+
 struct NearbyItem: Codable, Identifiable {
     // Using a generated UUID keeps SwiftUI happy; server doesn't need to send an id.
     let id: UUID
@@ -36,6 +41,7 @@ struct CardResponse: Codable {
     let mode: String
     let did_you_know: String?
     let nearby: [NearbyItem]
+    let sources: [FactSource]?
 
     // Optional extras (safe if server doesn't send them)
     let snap_distance_m: Int?
