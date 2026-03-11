@@ -1,9 +1,12 @@
 import Foundation
 
 final class APIClient {
-    // Simulator: backend on the same Mac
-    // Real device: use your Mac LAN IP, e.g. http://192.168.1.50:8000
-    private let baseURL = "http://127.0.0.1:8000"
+    private let baseURL: String
+
+    init() {
+        self.baseURL = Bundle.main.object(forInfoDictionaryKey: "APIBaseURL") as? String
+            ?? "https://nyc-street-history.onrender.com"
+    }
 
     func fetchCard(lat: Double, lon: Double, acc: Double) async throws -> CardResponse {
         var comps = URLComponents(string: "\(baseURL)/v1/card")!
