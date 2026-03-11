@@ -27,6 +27,11 @@ class NearbyPoiSqlRegressionTests(unittest.TestCase):
         self.assertIn("ROW_NUMBER() OVER ( PARTITION BY CATEGORY ORDER BY SCORE DESC ) AS CATEGORY_RANK", self.sql)
         self.assertIn("ORDER BY CATEGORY_RANK, CATEGORY_PRIORITY, SCORE DESC", self.sql)
 
+    def test_boosts_nearby_civic_places_over_generic_results(self):
+        self.assertIn("WHEN CATEGORY IN ('LANDMARK', 'PARK') AND DIST_M <= 250 THEN 2500", self.sql)
+        self.assertIn("WHEN CATEGORY = 'TRANSIT' AND DIST_M <= 150 THEN 800", self.sql)
+        self.assertIn("WHEN CATEGORY = 'FOOD' AND DIST_M <= 60 THEN 350", self.sql)
+
 
 if __name__ == "__main__":
     unittest.main()
