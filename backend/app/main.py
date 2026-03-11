@@ -11,6 +11,7 @@ from .queries import (
     NEARBY_POI_SQL,
     FACT_BY_STREETCODE_SQL,
     FACT_BY_STREETNAME_SQL,
+    FACT_BY_PLACENAME_SQL,
     CROSS_STREET_SQL,
 )
 
@@ -86,6 +87,13 @@ def normalize_fact_street_name(street_name: str | None) -> str | None:
     return normalized if normalized else None
 
 
+def normalize_fact_place_name(place_name: str | None) -> str | None:
+    if not place_name:
+        return None
+    normalized = " ".join(place_name.strip().split()).lower()
+    return normalized if normalized else None
+
+
 @app.get("/v1/card", response_model=CardResponse)
 def card(lat: float, lon: float, acc: float = 25.0):
     cache_key = f"card:{encode_geohash(lat, lon, precision=CARD_CACHE_PRECISION)}"
@@ -121,6 +129,22 @@ def card(lat: float, lon: float, acc: float = 25.0):
         if fact:
             did_you_know = fact["fact_text"]
             sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
+
+    if not did_you_know:
+        for item in nearby:
+            if item.get("category") not in {"park", "landmark"}:
+                continue
+            if item.get("distance_m") is not None and item["distance_m"] > 300:
+                continue
+            normalized_place = normalize_fact_place_name(item.get("name"))
+            if not normalized_place:
+                continue
+            fact = fetch_one(FACT_BY_PLACENAME_SQL, {"place_name": normalized_place})
+            if not fact:
+                continue
+            did_you_know = fact["fact_text"]
+            sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
+            break
 
     if not did_you_know and neighborhood:
         did_you_know = f"You’re in {neighborhood['name']}. Check nearby landmarks for context."

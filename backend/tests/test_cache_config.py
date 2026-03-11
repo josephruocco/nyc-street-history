@@ -17,8 +17,8 @@ class CacheConfigRegressionTests(unittest.TestCase):
         self.settings_source = normalize(SETTINGS_PY.read_text(encoding="utf-8"))
 
     def test_settings_exposes_cache_fields(self):
-        self.assertIn("CARD_CACHE_TTL_SECONDS: INT = 45", self.settings_source)
-        self.assertIn("CARD_CACHE_PRECISION: INT = 6", self.settings_source)
+        self.assertIn("CARD_CACHE_TTL_SECONDS: INT = 10", self.settings_source)
+        self.assertIn("CARD_CACHE_PRECISION: INT = 7", self.settings_source)
 
     def test_main_reads_cache_from_settings(self):
         self.assertIn("CARD_CACHE_TTL_SECONDS = MAX(0, INT(SETTINGS.CARD_CACHE_TTL_SECONDS))", self.main_source)
