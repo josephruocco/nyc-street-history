@@ -72,7 +72,15 @@ scored AS (
     name,
     category,
     dist_m,
-    (rank_score * 1000.0) - dist_m AS score,
+    (
+      (rank_score * 1000.0) - dist_m
+      + CASE
+          WHEN category IN ('landmark', 'park') AND dist_m <= 250 THEN 2500
+          WHEN category = 'transit' AND dist_m <= 150 THEN 800
+          WHEN category = 'food' AND dist_m <= 60 THEN 350
+          ELSE 0
+        END
+    ) AS score,
     CASE category
       WHEN 'landmark' THEN 1
       WHEN 'park' THEN 2
