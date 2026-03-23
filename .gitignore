@@ -104,3 +104,4 @@ pnpm-debug.log*
 *.tgz
 
 infra/.env.DS_Store
+CODEX_SESSION_TEMPLATE.md
