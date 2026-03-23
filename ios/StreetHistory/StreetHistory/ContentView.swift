@@ -5,9 +5,13 @@ import Combine
 struct ContentView: View {
     @StateObject private var lm = LocationManager()
     @StateObject private var vm = CardViewModel()
+    @StateObject private var journeyStore = JourneyStore()
 
     @State private var fetchTask: Task<Void, Never>?
     @State private var isUpdating = false
+    @State private var showJourneyPrompt = false
+    @State private var showHistory = false
+    @State private var showStreetContext = false
 
     private var isAuthorized: Bool {
         lm.status == .authorizedWhenInUse || lm.status == .authorizedAlways
@@ -46,6 +50,7 @@ struct ContentView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     statusBar
+                    journeyBanner
                     mainCard
                 }
                 .padding(.horizontal, 18)
@@ -62,6 +67,12 @@ struct ContentView: View {
             fetchTask = Task {
                 defer { isUpdating = false }
                 await vm.update(for: loc)
+                if let card = vm.card {
+                    journeyStore.record(card: card, location: loc)
+                }
+                if !journeyStore.isJourneyActive && !showJourneyPrompt {
+                    showJourneyPrompt = true
+                }
             }
         }
         .onChange(of: lm.status) { _, _ in
@@ -73,6 +84,19 @@ struct ContentView: View {
             if isAuthorized {
                 lm.requestPermissionAndStart()
             }
+        }
+        .alert("Start a journey?", isPresented: $showJourneyPrompt) {
+            Button("Not now", role: .cancel) {}
+            Button("Start") {
+                Task {
+                    await journeyStore.startJourney()
+                }
+            }
+        } message: {
+            Text("If you start a journey, the app will log the named streets you visit and notify you when you reach a new one.")
+        }
+        .sheet(isPresented: $showHistory) {
+            JourneyHistoryView(journeyStore: journeyStore)
         }
     }
 
@@ -95,6 +119,14 @@ struct ContentView: View {
 
             Spacer()
 
+            Button {
+                showHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.headline)
+                    .foregroundStyle(Color.black.opacity(0.72))
+            }
+
             if !isAuthorized {
                 Text(statusText(lm.status))
                     .font(.caption)
@@ -108,13 +140,67 @@ struct ContentView: View {
         .padding(.horizontal, 2)
     }
 
+    private var journeyBanner: some View {
+        Group {
+            if journeyStore.isJourneyActive, let session = journeyStore.currentSession {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Journey in progress")
+                            .font(.headline.weight(.heavy))
+                        Text("\(session.visits.count) named streets logged")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Stop") {
+                        journeyStore.stopJourney()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.82), in: Capsule())
+                    .foregroundStyle(.white)
+                }
+                .padding(16)
+                .background(Color(red: 0.91, green: 0.88, blue: 0.79), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            } else if isAuthorized {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Walk mode")
+                            .font(.subheadline.weight(.heavy))
+                        Text("Optional. Log named streets during a walk.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Start journey") {
+                        Task {
+                            await journeyStore.startJourney()
+                        }
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color(red: 0.12, green: 0.22, blue: 0.28), in: Capsule())
+                    .foregroundStyle(.white)
+                }
+                .padding(16)
+                .background(Color.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            }
+        }
+    }
+
     private var mainCard: some View {
         Group {
             if let card = vm.card {
                 VStack(alignment: .leading, spacing: 22) {
                     heroSection(card)
                     factSection(card)
-                    nearbySection(card)
+                    contextSection(card)
                     if let err = vm.errorText {
                         inlineError(err)
                     }
@@ -164,14 +250,18 @@ struct ContentView: View {
                 .foregroundStyle(Color.black.opacity(0.94))
 
             HStack(spacing: 10) {
+                labelChip(title: "Street", value: modeLabel(card.mode))
                 if let cross = card.cross_street, !cross.isEmpty {
-                    labelChip(title: "At", value: cross)
+                    labelChip(title: "Crossing", value: cross)
                 }
-                labelChip(title: "Mode", value: modeLabel(card.mode))
             }
 
-            if let firstPlace = prominentNearbyPlace(card) {
-                Text("Near \(firstPlace.name)")
+            if let cross = card.cross_street, !cross.isEmpty {
+                Text("Street-name history for where you are standing now.")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Street-name history for where you are standing now.")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
             }
@@ -179,74 +269,131 @@ struct ContentView: View {
     }
 
     private func factSection(_ card: CardResponse) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Did you know?")
-                .font(.title3.weight(.heavy))
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Street name history")
+                    .font(.title2.weight(.heavy))
+                Text(historySectionKicker(card))
+                    .font(.caption.weight(.bold))
+                    .tracking(1.0)
+                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+            }
 
             if let dyk = card.did_you_know, !dyk.isEmpty {
                 Text(dyk)
-                    .font(.system(.title3, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.9))
-                    .lineSpacing(4)
+                    .font(.system(size: 31, weight: .semibold, design: .serif))
+                    .foregroundStyle(Color.black.opacity(0.93))
+                    .lineSpacing(6)
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
-                Text("No historical note yet for this spot.")
+                Text("No street-name history loaded yet.")
+                    .font(.title3.weight(.medium))
                     .foregroundStyle(.secondary)
             }
 
-            if let source = card.sources?.first, let label = source.label, !label.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "books.vertical")
-                    Text(label)
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: card.sources?.first?.label == nil ? "character.book.closed" : "books.vertical")
+                    .font(.headline)
+                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    if let source = card.sources?.first, let label = source.label, !label.isEmpty {
+                        Text("Source")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Text(label)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.black.opacity(0.84))
+                    } else {
+                        Text("Coverage note")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Text("This street still needs a stronger namesake entry.")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.black.opacity(0.72))
+                    }
                 }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color(red: 0.12, green: 0.22, blue: 0.28))
             }
         }
-        .padding(18)
-        .background(Color(red: 0.98, green: 0.95, blue: 0.88), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(22)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.98, green: 0.95, blue: 0.88),
+                    Color(red: 0.96, green: 0.92, blue: 0.82)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
     }
 
-    private func nearbySection(_ card: CardResponse) -> some View {
+    private func contextSection(_ card: CardResponse) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Nearby")
-                    .font(.title3.weight(.heavy))
-                Spacer()
-                Text("\(card.nearby.count) places")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-
-            ForEach(uniqueNearby(card.nearby)) { item in
-                HStack(alignment: .top, spacing: 14) {
-                    Circle()
-                        .fill(categoryColor(item.category))
-                        .frame(width: 10, height: 10)
-                        .padding(.top, 7)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(item.name)
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(Color.black.opacity(0.92))
-
-                        HStack(spacing: 8) {
-                            Text(prettyCategory(item.category))
-                                .font(.caption.weight(.bold))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(categoryColor(item.category).opacity(0.14), in: Capsule())
-                                .foregroundStyle(categoryColor(item.category))
-
-                            Text(distanceLabel(item.distance_m))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showStreetContext.toggle()
+                }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Street context")
+                            .font(.title3.weight(.heavy))
+                            .foregroundStyle(Color.black.opacity(0.9))
+                        Text("Optional nearby context, not the main answer.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
+
+                    Text("\(uniqueNearby(card.nearby).count)")
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.05), in: Capsule())
+                        .foregroundStyle(.secondary)
+
+                    Image(systemName: showStreetContext ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
                 }
-                .padding(14)
-                .background(Color.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            if showStreetContext {
+                ForEach(uniqueNearby(card.nearby).prefix(4)) { item in
+                    HStack(alignment: .top, spacing: 14) {
+                        Circle()
+                            .fill(categoryColor(item.category))
+                            .frame(width: 10, height: 10)
+                            .padding(.top, 7)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(item.name)
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(Color.black.opacity(0.92))
+
+                            HStack(spacing: 8) {
+                                Text(prettyCategory(item.category))
+                                    .font(.caption.weight(.bold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(categoryColor(item.category).opacity(0.14), in: Capsule())
+                                    .foregroundStyle(categoryColor(item.category))
+
+                                Text(distanceLabel(item.distance_m))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Spacer()
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.55), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
             }
         }
     }
@@ -352,8 +499,16 @@ struct ContentView: View {
         }
     }
 
-    private func prominentNearbyPlace(_ card: CardResponse) -> NearbyItem? {
-        uniqueNearby(card.nearby).first
+    private func historySectionKicker(_ card: CardResponse) -> String {
+        if let text = card.did_you_know?.lowercased() {
+            if text.contains("named for") {
+                return "WHO THIS STREET IS NAMED FOR"
+            }
+            if text.contains("no street-name history loaded yet") {
+                return "HISTORY STILL MISSING"
+            }
+        }
+        return "WHY THIS STREET HAS THIS NAME"
     }
 
     private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
@@ -379,5 +534,78 @@ struct ContentView: View {
         case .notDetermined: return "notDetermined"
         @unknown default: return "unknown"
         }
+    }
+}
+
+private struct JourneyHistoryView: View {
+    @ObservedObject var journeyStore: JourneyStore
+    @Environment(\.dismiss) private var dismiss
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if journeyStore.sessions.isEmpty {
+                    Text("No walks logged yet.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(journeyStore.sessions) { session in
+                        Section {
+                            ForEach(session.visits) { visit in
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(visit.streetName)
+                                        .font(.headline)
+                                    Text(dateFormatter.string(from: visit.timestamp))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if let cross = visit.crossStreet, !cross.isEmpty {
+                                        Text("Near \(cross)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    if let fact = visit.factSnippet, !fact.isEmpty {
+                                        Text(fact)
+                                            .font(.subheadline)
+                                            .lineLimit(3)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        } header: {
+                            Text(sessionTitle(session))
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Walk History")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+                if !journeyStore.sessions.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Clear") {
+                            journeyStore.clearHistory()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func sessionTitle(_ session: WalkSession) -> String {
+        let start = dateFormatter.string(from: session.startedAt)
+        if let endedAt = session.endedAt {
+            return "\(start) to \(dateFormatter.string(from: endedAt))"
+        }
+        return start
     }
 }
