@@ -226,7 +226,7 @@ struct ContentView: View {
     }
 
     private func heroSection(_ card: CardResponse) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             let hasHeroImage = historyImageURL(card) != nil || historyImageSourceURL(card) != nil
 
             if hasHeroImage {
@@ -243,41 +243,48 @@ struct ContentView: View {
             }
 
             if let placeLine {
-                Text(placeLine.uppercased())
-                    .font(.caption.weight(.bold))
-                    .tracking(1.6)
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
+                        .frame(width: 7, height: 7)
+                    Text(placeLine)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                }
             }
 
             Text(card.canonical_street ?? "Unknown street")
-                .font(.system(size: 32, weight: .bold, design: .serif))
+                .font(.system(size: 34, weight: .black, design: .rounded))
                 .foregroundStyle(Color.black.opacity(0.94))
+                .fixedSize(horizontal: false, vertical: true)
 
             if let namesake = historyNamesake(card), !namesake.isEmpty {
-                Text("Named for \(namesake)")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("NAME")
+                        .font(.caption2.weight(.black))
+                        .tracking(1.3)
+                        .foregroundStyle(.secondary)
+                    Text(namesake)
+                        .font(.system(size: 21, weight: .semibold, design: .serif))
+                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                }
             }
 
             if let cross = card.cross_street, !cross.isEmpty {
                 labelChip(title: "Crossing", value: cross)
             }
-
-            Text("Street-name history for where you are standing now.")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
         }
     }
 
     private func factSection(_ card: CardResponse) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("History")
-                        .font(.title3.weight(.bold))
+                        .font(.headline.weight(.bold))
                     Text(historySectionKicker(card))
-                        .font(.caption.weight(.bold))
-                        .tracking(1.2)
+                        .font(.caption2.weight(.black))
+                        .tracking(1.5)
                         .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
                 }
 
@@ -290,9 +297,10 @@ struct ContentView: View {
 
             if let dyk = historyBodyText(card), !dyk.isEmpty {
                 Text(dyk)
-                    .font(.system(size: 19, weight: .regular, design: .serif))
+                    .font(.system(size: 18, weight: .regular, design: .serif))
                     .foregroundStyle(Color.black.opacity(0.95))
-                    .lineSpacing(4)
+                    .lineSpacing(6)
+                    .frame(maxWidth: 305, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("No street-name history loaded yet.")
@@ -347,7 +355,7 @@ struct ContentView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Street context")
-                                .font(.subheadline.weight(.bold))
+                                .font(.footnote.weight(.bold))
                                 .foregroundStyle(Color.black.opacity(0.88))
                             Text("Nearby places if you want extra context.")
                                 .font(.caption)
