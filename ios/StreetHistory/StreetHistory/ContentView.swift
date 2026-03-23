@@ -289,29 +289,14 @@ struct ContentView: View {
                     .foregroundStyle(Color.black.opacity(0.35))
             }
 
-            if let imageURL = historyImageURL(card),
-               let url = URL(string: imageURL) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure(_):
-                        historyImageFallback
-                    case .empty:
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.black.opacity(0.05))
-                            ProgressView()
-                        }
-                    @unknown default:
-                        historyImageFallback
-                    }
-                }
-                .frame(height: 188)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
+            HistoryImageView(
+                imageURL: historyImageURL(card),
+                wikipediaSourceURL: historyImageSourceURL(card)
+            )
+            .frame(height: 188)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .opacity((historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 1 : 0)
+            .frame(height: (historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 188 : 0)
 
             Rectangle()
                 .fill(Color.black.opacity(0.08))
@@ -562,6 +547,10 @@ struct ContentView: View {
         card.history?.image_url ?? card.image_url
     }
 
+    private func historyImageSourceURL(_ card: CardResponse) -> String? {
+        card.history?.image_source_url ?? card.image_source_url ?? historySource(card)?.url
+    }
+
     private func historySource(_ card: CardResponse) -> FactSource? {
         card.history?.source ?? card.sources?.first
     }
@@ -703,6 +692,107 @@ private struct StreetContextSheet: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private struct WikipediaSummaryResponse: Decodable {
+    struct Thumbnail: Decodable {
+        let source: String
+    }
+
+    let thumbnail: Thumbnail?
+}
+
+private struct HistoryImageView: View {
+    let imageURL: String?
+    let wikipediaSourceURL: String?
+
+    @State private var resolvedWikipediaThumbnailURL: String?
+    @State private var hasAttemptedResolution = false
+
+    var body: some View {
+        Group {
+            if let explicitURL = imageURL, let url = URL(string: explicitURL) {
+                AsyncImage(url: url) { phase in
+                    imagePhaseView(phase)
+                }
+            } else if let resolvedURL = resolvedWikipediaThumbnailURL, let url = URL(string: resolvedURL) {
+                AsyncImage(url: url) { phase in
+                    imagePhaseView(phase)
+                }
+            } else if wikipediaSummaryURL != nil && !hasAttemptedResolution {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.black.opacity(0.05))
+                    ProgressView()
+                }
+                .task {
+                    await resolveWikipediaThumbnail()
+                }
+            } else {
+                EmptyView()
+            }
+        }
+    }
+
+    private var wikipediaSummaryURL: URL? {
+        guard let wikipediaSourceURL,
+              let url = URL(string: wikipediaSourceURL),
+              let host = url.host,
+              host.contains("wikipedia.org") else { return nil }
+
+        let title = url.lastPathComponent.removingPercentEncoding ?? url.lastPathComponent
+        guard !title.isEmpty else { return nil }
+        let encodedTitle = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? title
+        return URL(string: "https://en.wikipedia.org/api/rest_v1/page/summary/\(encodedTitle)")
+    }
+
+    private func imagePhaseView(_ phase: AsyncImagePhase) -> some View {
+        Group {
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .scaledToFill()
+            case .failure(_):
+                historyImageFallback
+            case .empty:
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.black.opacity(0.05))
+                    ProgressView()
+                }
+            @unknown default:
+                historyImageFallback
+            }
+        }
+    }
+
+    @MainActor
+    private func resolveWikipediaThumbnail() async {
+        guard !hasAttemptedResolution else { return }
+        hasAttemptedResolution = true
+
+        guard let summaryURL = wikipediaSummaryURL else { return }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: summaryURL)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return }
+            let summary = try JSONDecoder().decode(WikipediaSummaryResponse.self, from: data)
+            resolvedWikipediaThumbnailURL = summary.thumbnail?.source
+        } catch {
+            resolvedWikipediaThumbnailURL = nil
+        }
+    }
+
+    private var historyImageFallback: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black.opacity(0.05))
+            Image(systemName: "photo")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
     }
 }
