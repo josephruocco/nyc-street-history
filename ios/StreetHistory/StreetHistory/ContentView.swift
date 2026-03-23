@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var showJourneyPrompt = false
     @State private var showHistory = false
     @State private var showStreetContext = false
+    @State private var showExploreBrowser = false
+    @State private var selectedNeighborhoodGuide: NeighborhoodGuide?
 
     private var isAuthorized: Bool {
         lm.status == .authorizedWhenInUse || lm.status == .authorizedAlways
@@ -111,6 +113,12 @@ struct ContentView: View {
                 StreetContextSheet(card: card)
             }
         }
+        .sheet(isPresented: $showExploreBrowser) {
+            NeighborhoodGuideBrowserView()
+        }
+        .sheet(item: $selectedNeighborhoodGuide) { guide in
+            NeighborhoodGuideDetailView(guide: guide)
+        }
     }
 
     private var statusBar: some View {
@@ -133,6 +141,14 @@ struct ContentView: View {
             Spacer()
 
             if isAuthorized {
+                Button {
+                    showExploreBrowser = true
+                } label: {
+                    Image(systemName: "map")
+                        .font(.headline)
+                        .foregroundStyle(Color.black.opacity(0.72))
+                }
+
                 if journeyStore.isJourneyActive, let session = journeyStore.currentSession {
                     Menu {
                         Button("Stop journey", role: .destructive) {
@@ -243,13 +259,34 @@ struct ContentView: View {
             }
 
             if let placeLine {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
-                        .frame(width: 7, height: 7)
-                    Text(placeLine)
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                let guide = card.neighborhood.flatMap { NeighborhoodGuideStore.neighborhood(named: $0) }
+                Group {
+                    if let guide {
+                        Button {
+                            selectedNeighborhoodGuide = guide
+                        } label: {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
+                                    .frame(width: 7, height: 7)
+                                Text(placeLine)
+                                    .font(.footnote.weight(.semibold))
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2.weight(.bold))
+                            }
+                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
+                                .frame(width: 7, height: 7)
+                            Text(placeLine)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                        }
+                    }
                 }
             }
 
