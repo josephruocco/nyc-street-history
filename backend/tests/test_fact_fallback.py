@@ -24,6 +24,7 @@ class FactFallbackSqlRegressionTests(unittest.TestCase):
         self.assertIn("FACT_BY_PLACENAME_SQL", self.queries)
         self.assertIn("WHERE KEY_TYPE = 'PLACE_NAME'", self.queries)
         self.assertIn("LOWER(BTRIM(KEY_VALUE)) = :PLACE_NAME", self.queries)
+        self.assertIn("SELECT TO_JSONB(FACT) AS FACT", self.queries)
 
 
 class FactFallbackWiringRegressionTests(unittest.TestCase):
@@ -39,8 +40,11 @@ class FactFallbackWiringRegressionTests(unittest.TestCase):
     def test_card_falls_back_to_fact_by_street_name(self):
         self.assertIn("FACT = FETCH_ONE(FACT_BY_STREETNAME_SQL, {\"STREET_NAME\": NORMALIZED_STREET})", self.main_source)
 
-    def test_card_falls_back_to_fact_by_place_name(self):
-        self.assertIn("FACT = FETCH_ONE(FACT_BY_PLACENAME_SQL, {\"PLACE_NAME\": NORMALIZED_PLACE})", self.main_source)
+    def test_namesake_and_history_fields_are_wired(self):
+        self.assertIn("NAMESAKE = FACT.GET(\"NAMESAKE\") OR INFER_NAMESAKE(HISTORY_BLURB)", self.main_source)
+        self.assertIn("HISTORY_BLURB = FACT.GET(\"HISTORY_BLURB\") OR FACT.GET(\"FACT_TEXT\")", self.main_source)
+        self.assertIn("NAMESAKE=NAMESAKE", self.main_source)
+        self.assertIn("HISTORY_BLURB=HISTORY_BLURB", self.main_source)
 
 
 if __name__ == "__main__":

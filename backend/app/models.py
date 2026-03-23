@@ -19,6 +19,10 @@ class CardResponse(BaseModel):
     borough: Optional[str] = None
     neighborhood: Optional[str] = None
     mode: str  # NAMED_STREET | NUMBERED_STREET | NEAR
+    namesake: Optional[str] = None
+    history_blurb: Optional[str] = None
+    image_url: Optional[str] = None
+    image_source_url: Optional[str] = None
     did_you_know: Optional[str] = None
     nearby: List[NearbyItem] = []
     sources: List[Source] = []

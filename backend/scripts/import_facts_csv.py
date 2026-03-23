@@ -5,6 +5,10 @@ CSV columns:
 - key_type (required): street_code | street_name | place_name
 - key_value (required)
 - fact_text (required)
+- namesake (optional)
+- history_blurb (optional)
+- image_url (optional)
+- image_source_url (optional)
 - source_label (optional)
 - source_url (optional)
 - confidence (optional, default 0.5)
@@ -21,11 +25,27 @@ import sys
 from pathlib import Path
 
 UPSERT_SQL = """
-INSERT INTO fact (key_type, key_value, fact_text, source_label, source_url, confidence, updated_at)
+INSERT INTO fact (
+  key_type,
+  key_value,
+  fact_text,
+  namesake,
+  history_blurb,
+  image_url,
+  image_source_url,
+  source_label,
+  source_url,
+  confidence,
+  updated_at
+)
 VALUES (
   %(key_type)s,
   %(key_value)s,
   %(fact_text)s,
+  %(namesake)s,
+  %(history_blurb)s,
+  %(image_url)s,
+  %(image_source_url)s,
   %(source_label)s,
   %(source_url)s,
   %(confidence)s,
@@ -34,6 +54,10 @@ VALUES (
 ON CONFLICT (key_type, key_value)
 DO UPDATE SET
   fact_text = EXCLUDED.fact_text,
+  namesake = EXCLUDED.namesake,
+  history_blurb = EXCLUDED.history_blurb,
+  image_url = EXCLUDED.image_url,
+  image_source_url = EXCLUDED.image_source_url,
   source_label = EXCLUDED.source_label,
   source_url = EXCLUDED.source_url,
   confidence = EXCLUDED.confidence,
@@ -76,6 +100,10 @@ def row_to_params(row: dict) -> dict | None:
         return None
 
     key_type, key_value = key
+    namesake = (row.get("namesake") or "").strip() or None
+    history_blurb = (row.get("history_blurb") or "").strip() or fact_text
+    image_url = (row.get("image_url") or "").strip() or None
+    image_source_url = (row.get("image_source_url") or "").strip() or None
     source_label = (row.get("source_label") or "").strip() or None
     source_url = (row.get("source_url") or "").strip() or None
     confidence = parse_confidence(row.get("confidence"))
@@ -84,6 +112,10 @@ def row_to_params(row: dict) -> dict | None:
         "key_type": key_type,
         "key_value": key_value,
         "fact_text": fact_text,
+        "namesake": namesake,
+        "history_blurb": history_blurb,
+        "image_url": image_url,
+        "image_source_url": image_source_url,
         "source_label": source_label,
         "source_url": source_url,
         "confidence": confidence,
@@ -92,6 +124,10 @@ def row_to_params(row: dict) -> dict | None:
 
 def ensure_unique_constraint(conn) -> None:
     with conn.cursor() as cur:
+        cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS namesake TEXT;")
+        cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS history_blurb TEXT;")
+        cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS image_url TEXT;")
+        cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS image_source_url TEXT;")
         cur.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS uq_fact_key_type_value

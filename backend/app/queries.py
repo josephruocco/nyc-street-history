@@ -117,7 +117,7 @@ LIMIT :limit_n;
 """
 
 FACT_BY_STREETCODE_SQL = """
-SELECT fact_text, source_label, source_url, confidence
+SELECT to_jsonb(fact) AS fact
 FROM fact
 WHERE key_type = 'street_code' AND key_value = :street_code
 ORDER BY confidence DESC, updated_at DESC
@@ -125,7 +125,7 @@ LIMIT 1;
 """
 
 FACT_BY_STREETNAME_SQL = """
-SELECT fact_text, source_label, source_url, confidence
+SELECT to_jsonb(fact) AS fact
 FROM fact
 WHERE key_type = 'street_name' AND LOWER(BTRIM(key_value)) = :street_name
 ORDER BY confidence DESC, updated_at DESC
@@ -133,7 +133,7 @@ LIMIT 1;
 """
 
 FACT_BY_PLACENAME_SQL = """
-SELECT fact_text, source_label, source_url, confidence
+SELECT to_jsonb(fact) AS fact
 FROM fact
 WHERE key_type = 'place_name' AND LOWER(BTRIM(key_value)) = :place_name
 ORDER BY confidence DESC, updated_at DESC

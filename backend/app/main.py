@@ -19,6 +19,12 @@ app = FastAPI(title="NYC Street History API")
 
 NUMBERED_PAT = re.compile(r"^(E|W)\s*\d+|^\d+(st|nd|rd|th)\b", re.IGNORECASE)
 ORDINAL_PAT = re.compile(r"^(\d+)(ST|ND|RD|TH)$", re.IGNORECASE)
+NAMED_FOR_PATTERNS = [
+    re.compile(r"\b(?:is|was)\s+named\s+for\s+([^.,;]+)", re.IGNORECASE),
+    re.compile(r"\b(?:is|was)\s+named\s+after\s+([^.,;]+)", re.IGNORECASE),
+    re.compile(r"\bhonors\s+([^.,;]+)", re.IGNORECASE),
+    re.compile(r"\btakes\s+its\s+name\s+from\s+([^.,;]+)", re.IGNORECASE),
+]
 CARD_CACHE_TTL_SECONDS = max(0, int(settings.card_cache_ttl_seconds))
 CARD_CACHE_PRECISION = min(12, max(1, int(settings.card_cache_precision)))
 CARD_CACHE = SimpleTTLCache()
@@ -94,6 +100,24 @@ def normalize_fact_place_name(place_name: str | None) -> str | None:
     return normalized if normalized else None
 
 
+def extract_fact_payload(row: dict | None) -> dict | None:
+    if not row:
+        return None
+    payload = row.get("fact")
+    return payload if isinstance(payload, dict) else row
+
+
+def infer_namesake(text: str | None) -> str | None:
+    if not text:
+        return None
+    for pattern in NAMED_FOR_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            candidate = " ".join(match.group(1).split()).strip()
+            return candidate.rstrip(" .,:;") or None
+    return None
+
+
 @app.get("/v1/card", response_model=CardResponse)
 def card(lat: float, lon: float, acc: float = 25.0):
     cache_key = f"card:{encode_geohash(lat, lon, precision=CARD_CACHE_PRECISION)}"
@@ -113,6 +137,10 @@ def card(lat: float, lon: float, acc: float = 25.0):
 
     mode = classify_mode(street.get("primary_name"))
     did_you_know = None
+    namesake = None
+    history_blurb = None
+    image_url = None
+    image_source_url = None
     sources: list[Source] = []
 
     if mode == "NAMED_STREET":
@@ -126,14 +154,22 @@ def card(lat: float, lon: float, acc: float = 25.0):
             if normalized_street:
                 fact = fetch_one(FACT_BY_STREETNAME_SQL, {"street_name": normalized_street})
 
+        fact = extract_fact_payload(fact)
+
         if fact:
-            did_you_know = fact["fact_text"]
+            history_blurb = fact.get("history_blurb") or fact.get("fact_text")
+            did_you_know = history_blurb
+            namesake = fact.get("namesake") or infer_namesake(history_blurb)
+            image_url = fact.get("image_url")
+            image_source_url = fact.get("image_source_url")
             sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
 
     if not did_you_know and neighborhood:
-        did_you_know = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}. You’re in {neighborhood['name']}."
+        history_blurb = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}. You’re in {neighborhood['name']}."
+        did_you_know = history_blurb
     elif not did_you_know:
-        did_you_know = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}."
+        history_blurb = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}."
+        did_you_know = history_blurb
 
     response = CardResponse(
         canonical_street=prettify_street_name(street.get("primary_name")),
@@ -141,6 +177,10 @@ def card(lat: float, lon: float, acc: float = 25.0):
         borough=street.get("borough"),
         neighborhood=neighborhood["name"] if neighborhood else None,
         mode=mode,
+        namesake=namesake,
+        history_blurb=history_blurb,
+        image_url=image_url,
+        image_source_url=image_source_url,
         did_you_know=did_you_know,
         nearby=[NearbyItem(**n) for n in nearby],
         sources=sources,

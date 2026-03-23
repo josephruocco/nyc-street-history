@@ -35,6 +35,23 @@ class ImportFactsCsvTests(unittest.TestCase):
         self.assertEqual(MODULE.parse_confidence("2.0"), 1.0)
         self.assertEqual(MODULE.parse_confidence("-1"), 0.0)
 
+    def test_row_to_params_supports_structured_history_fields(self):
+        params = MODULE.row_to_params(
+            {
+                "key_type": "street_name",
+                "key_value": "Withers Street",
+                "fact_text": "Withers Street is named for Reuben Withers.",
+                "namesake": "Reuben Withers",
+                "history_blurb": "Withers Street is named for Reuben Withers, a merchant tied to early Brooklyn ferries.",
+                "image_url": "https://example.com/withers.jpg",
+                "image_source_url": "https://example.com/source",
+            }
+        )
+        self.assertEqual(params["namesake"], "Reuben Withers")
+        self.assertEqual(params["history_blurb"], "Withers Street is named for Reuben Withers, a merchant tied to early Brooklyn ferries.")
+        self.assertEqual(params["image_url"], "https://example.com/withers.jpg")
+        self.assertEqual(params["image_source_url"], "https://example.com/source")
+
 
 if __name__ == "__main__":
     unittest.main()
