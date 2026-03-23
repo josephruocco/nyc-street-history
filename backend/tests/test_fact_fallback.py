@@ -43,6 +43,7 @@ class FactFallbackWiringRegressionTests(unittest.TestCase):
     def test_namesake_and_history_fields_are_wired(self):
         self.assertIn("NAMESAKE = FACT.GET(\"NAMESAKE\") OR INFER_NAMESAKE(HISTORY_BLURB)", self.main_source)
         self.assertIn("HISTORY_BLURB = FACT.GET(\"HISTORY_BLURB\") OR FACT.GET(\"FACT_TEXT\")", self.main_source)
+        self.assertIn("HISTORY=HISTORYENTRY(", self.main_source)
         self.assertIn("NAMESAKE=NAMESAKE", self.main_source)
         self.assertIn("HISTORY_BLURB=HISTORY_BLURB", self.main_source)
 

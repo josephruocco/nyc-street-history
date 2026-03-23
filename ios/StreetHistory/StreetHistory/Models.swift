@@ -5,6 +5,14 @@ struct FactSource: Codable {
     let url: String?
 }
 
+struct HistoryEntry: Codable {
+    let namesake: String?
+    let blurb: String?
+    let image_url: String?
+    let image_source_url: String?
+    let source: FactSource?
+}
+
 struct NearbyItem: Codable, Identifiable {
     // Using a generated UUID keeps SwiftUI happy; server doesn't need to send an id.
     let id: UUID
@@ -39,6 +47,7 @@ struct CardResponse: Codable {
     let borough: String?
     let neighborhood: String?
     let mode: String
+    let history: HistoryEntry?
     let namesake: String?
     let history_blurb: String?
     let image_url: String?

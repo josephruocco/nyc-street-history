@@ -253,7 +253,7 @@ struct ContentView: View {
                 .font(.system(size: 40, weight: .heavy, design: .serif))
                 .foregroundStyle(Color.black.opacity(0.94))
 
-            if let namesake = card.namesake, !namesake.isEmpty {
+            if let namesake = historyNamesake(card), !namesake.isEmpty {
                 Text("Named for \(namesake)")
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
@@ -289,7 +289,7 @@ struct ContentView: View {
                     .foregroundStyle(Color.black.opacity(0.35))
             }
 
-            if let imageURL = card.image_url,
+            if let imageURL = historyImageURL(card),
                let url = URL(string: imageURL) {
                 AsyncImage(url: url) { phase in
                     switch phase {
@@ -335,12 +335,12 @@ struct ContentView: View {
 
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(card.sources?.first?.label == nil ? "Coverage note" : "Source")
+                    Text(historySource(card)?.label == nil ? "Coverage note" : "Source")
                         .font(.caption.weight(.bold))
                         .tracking(0.6)
                         .foregroundStyle(.secondary)
 
-                    if let source = card.sources?.first, let label = source.label, !label.isEmpty {
+                    if let source = historySource(card), let label = source.label, !label.isEmpty {
                         Text(label)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Color.black.opacity(0.84))
@@ -353,7 +353,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                if let source = card.sources?.first,
+                if let source = historySource(card),
                    let urlString = source.url,
                    let url = URL(string: urlString),
                    !urlString.isEmpty {
@@ -530,7 +530,7 @@ struct ContentView: View {
     }
 
     private func historyBodyText(_ card: CardResponse) -> String? {
-        let rawText = card.history_blurb ?? card.did_you_know
+        let rawText = card.history?.blurb ?? card.history_blurb ?? card.did_you_know
         guard var text = rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
             return nil
         }
@@ -552,6 +552,18 @@ struct ContentView: View {
         }
 
         return text
+    }
+
+    private func historyNamesake(_ card: CardResponse) -> String? {
+        card.history?.namesake ?? card.namesake
+    }
+
+    private func historyImageURL(_ card: CardResponse) -> String? {
+        card.history?.image_url ?? card.image_url
+    }
+
+    private func historySource(_ card: CardResponse) -> FactSource? {
+        card.history?.source ?? card.sources?.first
     }
 
     private var historyImageFallback: some View {

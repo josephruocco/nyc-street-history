@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 
 from .cache import SimpleTTLCache, encode_geohash
 from .db import fetch_one, fetch_all
-from .models import CardResponse, NearbyItem, Source
+from .models import CardResponse, NearbyItem, Source, HistoryEntry
 from .settings import settings
 from .queries import (
     SNAP_STREET_SQL,
@@ -174,6 +174,13 @@ def card(lat: float, lon: float, acc: float = 25.0):
         borough=street.get("borough"),
         neighborhood=neighborhood["name"] if neighborhood else None,
         mode=mode,
+        history=HistoryEntry(
+            namesake=namesake,
+            blurb=history_blurb,
+            image_url=image_url,
+            image_source_url=image_source_url,
+            source=sources[0] if sources else None,
+        ),
         namesake=namesake,
         history_blurb=history_blurb,
         image_url=image_url,
