@@ -130,24 +130,10 @@ def card(lat: float, lon: float, acc: float = 25.0):
             did_you_know = fact["fact_text"]
             sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
 
-    if not did_you_know:
-        for item in nearby:
-            if item.get("category") not in {"park", "landmark"}:
-                continue
-            if item.get("distance_m") is not None and item["distance_m"] > 300:
-                continue
-            normalized_place = normalize_fact_place_name(item.get("name"))
-            if not normalized_place:
-                continue
-            fact = fetch_one(FACT_BY_PLACENAME_SQL, {"place_name": normalized_place})
-            if not fact:
-                continue
-            did_you_know = fact["fact_text"]
-            sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
-            break
-
     if not did_you_know and neighborhood:
-        did_you_know = f"You’re in {neighborhood['name']}. Check nearby landmarks for context."
+        did_you_know = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}. You’re in {neighborhood['name']}."
+    elif not did_you_know:
+        did_you_know = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}."
 
     response = CardResponse(
         canonical_street=prettify_street_name(street.get("primary_name")),
