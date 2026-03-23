@@ -263,7 +263,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Encyclopedia Entry")
+                    Text("History")
                         .font(.title3.weight(.heavy))
                     Text(historySectionKicker(card))
                         .font(.caption.weight(.bold))
