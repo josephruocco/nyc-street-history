@@ -283,7 +283,7 @@ struct ContentView: View {
                 .fill(Color.black.opacity(0.08))
                 .frame(height: 1)
 
-            if let dyk = card.did_you_know, !dyk.isEmpty {
+            if let dyk = historyBodyText(card), !dyk.isEmpty {
                 Text(dyk)
                     .font(.system(size: 30, weight: .medium, design: .serif))
                     .foregroundStyle(Color.black.opacity(0.95))
@@ -511,15 +511,39 @@ struct ContentView: View {
     }
 
     private func historySectionKicker(_ card: CardResponse) -> String {
-        if let text = card.did_you_know?.lowercased() {
+        if let text = historyBodyText(card)?.lowercased() {
             if text.contains("named for") {
                 return "WHO THIS STREET IS NAMED FOR"
             }
-            if text.contains("no street-name history loaded yet") {
+            if text.contains("no street-name history loaded yet") || text.contains("street-name history is still being added") {
                 return "HISTORY STILL MISSING"
             }
         }
         return "WHY THIS STREET HAS THIS NAME"
+    }
+
+    private func historyBodyText(_ card: CardResponse) -> String? {
+        guard var text = card.did_you_know?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            return nil
+        }
+
+        if let neighborhood = card.neighborhood?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !neighborhood.isEmpty {
+            let redundantPrefix = "You're in \(neighborhood). "
+            if text.hasPrefix(redundantPrefix) {
+                text.removeFirst(redundantPrefix.count)
+            }
+        }
+
+        if text == "Check nearby landmarks for context." {
+            return "Street-name history is still being added for this location."
+        }
+
+        if text.hasPrefix("Check nearby landmarks for context.") {
+            return "Street-name history is still being added for this location."
+        }
+
+        return text
     }
 
     private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
