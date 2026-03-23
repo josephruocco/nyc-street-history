@@ -98,6 +98,11 @@ struct ContentView: View {
         .sheet(isPresented: $showHistory) {
             JourneyHistoryView(journeyStore: journeyStore)
         }
+        .sheet(isPresented: $showStreetContext) {
+            if let card = vm.card {
+                StreetContextSheet(card: card)
+            }
+        }
     }
 
     private var statusBar: some View {
@@ -200,7 +205,6 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     heroSection(card)
                     factSection(card)
-                    contextSection(card)
                     if let err = vm.errorText {
                         inlineError(err)
                     }
@@ -361,6 +365,39 @@ struct ContentView: View {
                         .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
                 }
             }
+
+            if !uniqueNearby(card.nearby).isEmpty {
+                Button {
+                    showStreetContext = true
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Street context")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.black.opacity(0.88))
+                            Text("Nearby places if you want extra context.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Text("\(uniqueNearby(card.nearby).count)")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.05), in: Capsule())
+                            .foregroundStyle(.secondary)
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.45), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(22)
         .background(
@@ -374,75 +411,6 @@ struct ContentView: View {
             ),
             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
         )
-    }
-
-    private func contextSection(_ card: CardResponse) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showStreetContext.toggle()
-                }
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Street context")
-                            .font(.title3.weight(.heavy))
-                            .foregroundStyle(Color.black.opacity(0.9))
-                        Text("Optional nearby context, not the main answer.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Text("\(uniqueNearby(card.nearby).count)")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.05), in: Capsule())
-                        .foregroundStyle(.secondary)
-
-                    Image(systemName: showStreetContext ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
-
-            if showStreetContext {
-                ForEach(uniqueNearby(card.nearby).prefix(4)) { item in
-                    HStack(alignment: .top, spacing: 14) {
-                        Circle()
-                            .fill(categoryColor(item.category))
-                            .frame(width: 10, height: 10)
-                            .padding(.top, 7)
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(item.name)
-                                .font(.headline.weight(.semibold))
-                                .foregroundStyle(Color.black.opacity(0.92))
-
-                            HStack(spacing: 8) {
-                                Text(prettyCategory(item.category))
-                                    .font(.caption.weight(.bold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(categoryColor(item.category).opacity(0.14), in: Capsule())
-                                    .foregroundStyle(categoryColor(item.category))
-
-                                Text(distanceLabel(item.distance_m))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        Spacer()
-                    }
-                    .padding(14)
-                    .background(Color.white.opacity(0.55), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
-            }
-        }
     }
 
     private func inlineError(_ message: String) -> some View {
@@ -615,6 +583,111 @@ struct ContentView: View {
         case .restricted: return "restricted"
         case .notDetermined: return "notDetermined"
         @unknown default: return "unknown"
+        }
+    }
+}
+
+private struct StreetContextSheet: View {
+    let card: CardResponse
+    @Environment(\.dismiss) private var dismiss
+
+    private func categoryColor(_ category: String) -> Color {
+        switch category.lowercased() {
+        case "park":
+            return Color(red: 0.21, green: 0.46, blue: 0.27)
+        case "transit":
+            return Color(red: 0.17, green: 0.33, blue: 0.58)
+        case "food":
+            return Color(red: 0.61, green: 0.24, blue: 0.19)
+        case "landmark":
+            return Color(red: 0.50, green: 0.33, blue: 0.11)
+        default:
+            return .gray
+        }
+    }
+
+    private func prettyCategory(_ category: String) -> String {
+        switch category.lowercased() {
+        case "park":
+            return "Park"
+        case "transit":
+            return "Transit"
+        case "food":
+            return "Food"
+        case "landmark":
+            return "Landmark"
+        default:
+            return category.capitalized
+        }
+    }
+
+    private func distanceLabel(_ meters: Int) -> String {
+        if meters >= 1000 {
+            return String(format: "%.1f km away", Double(meters) / 1000.0)
+        }
+        return "\(meters)m away"
+    }
+
+    private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
+        var seen = Set<String>()
+        var result: [NearbyItem] = []
+
+        for item in items {
+            let key = "\(item.name.lowercased())|\(item.category.lowercased())"
+            if seen.contains(key) { continue }
+            seen.insert(key)
+            result.append(item)
+        }
+
+        return result
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(uniqueNearby(card.nearby)) { item in
+                        HStack(alignment: .top, spacing: 14) {
+                            Circle()
+                                .fill(categoryColor(item.category))
+                                .frame(width: 10, height: 10)
+                                .padding(.top, 7)
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(item.name)
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(Color.black.opacity(0.92))
+
+                                HStack(spacing: 8) {
+                                    Text(prettyCategory(item.category))
+                                        .font(.caption.weight(.bold))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(categoryColor(item.category).opacity(0.14), in: Capsule())
+                                        .foregroundStyle(categoryColor(item.category))
+
+                                    Text(distanceLabel(item.distance_m))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            Spacer()
+                        }
+                        .padding(.vertical, 6)
+                    }
+                } footer: {
+                    Text("Nearby places are secondary context. The main card stays focused on the street name itself.")
+                }
+            }
+            .navigationTitle("Street Context")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }
