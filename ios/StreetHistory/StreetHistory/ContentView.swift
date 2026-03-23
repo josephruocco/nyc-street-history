@@ -253,6 +253,12 @@ struct ContentView: View {
                 .font(.system(size: 40, weight: .heavy, design: .serif))
                 .foregroundStyle(Color.black.opacity(0.94))
 
+            if let namesake = card.namesake, !namesake.isEmpty {
+                Text("Named for \(namesake)")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+            }
+
             if let cross = card.cross_street, !cross.isEmpty {
                 labelChip(title: "Crossing", value: cross)
             }
@@ -311,18 +317,6 @@ struct ContentView: View {
                 .fill(Color.black.opacity(0.08))
                 .frame(height: 1)
 
-            if let namesake = card.namesake, !namesake.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Named for")
-                        .font(.caption.weight(.bold))
-                        .tracking(0.8)
-                        .foregroundStyle(.secondary)
-                    Text(namesake)
-                        .font(.system(size: 26, weight: .semibold, design: .serif))
-                        .foregroundStyle(Color.black.opacity(0.92))
-                }
-            }
-
             if let dyk = historyBodyText(card), !dyk.isEmpty {
                 Text(dyk)
                     .font(.system(size: 30, weight: .medium, design: .serif))
@@ -359,10 +353,19 @@ struct ContentView: View {
 
                 Spacer()
 
-                if let source = card.sources?.first, let url = source.url, !url.isEmpty {
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.headline)
+                if let source = card.sources?.first,
+                   let urlString = source.url,
+                   let url = URL(string: urlString),
+                   !urlString.isEmpty {
+                    Link(destination: url) {
+                        HStack(spacing: 6) {
+                            Text("Open")
+                                .font(.caption.weight(.semibold))
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption.weight(.semibold))
+                        }
                         .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                    }
                 }
             }
 
