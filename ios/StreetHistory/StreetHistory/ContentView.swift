@@ -24,39 +24,10 @@ struct ContentView: View {
         return parts.isEmpty ? nil : parts.joined(separator: " • ")
     }
 
-    private var headerAccent: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.09, green: 0.10, blue: 0.11),
-                Color(red: 0.20, green: 0.16, blue: 0.13),
-                Color(red: 0.44, green: 0.33, blue: 0.22)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
     var body: some View {
         ZStack {
             Color(red: 0.92, green: 0.89, blue: 0.84)
                 .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                headerAccent
-                    .frame(height: 164)
-                    .overlay(
-                        LinearGradient(
-                            colors: [
-                                Color.black.opacity(0.18),
-                                Color.clear
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                Spacer()
-            }
-            .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -108,9 +79,9 @@ struct ContentView: View {
         .sheet(isPresented: $showHistory) {
             JourneyHistoryView(journeyStore: journeyStore)
         }
-        .sheet(isPresented: $showStreetContext) {
+        .fullScreenCover(isPresented: $showStreetContext) {
             if let card = vm.card {
-                StreetContextSheet(card: card)
+                StreetContextPage(card: card)
             }
         }
         .sheet(isPresented: $showExploreBrowser) {
@@ -308,12 +279,6 @@ struct ContentView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("History")
                     .font(.headline.weight(.bold))
-
-                Spacer()
-
-                Image(systemName: "book.closed")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.black.opacity(0.38))
             }
 
             if let deck = historyParts.deck {
@@ -620,7 +585,7 @@ struct ContentView: View {
     }
 }
 
-private struct StreetContextSheet: View {
+private struct StreetContextPage: View {
     let card: CardResponse
     @Environment(\.dismiss) private var dismiss
 
@@ -714,6 +679,7 @@ private struct StreetContextSheet: View {
                 }
             }
             .navigationTitle("Street Context")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close") {
