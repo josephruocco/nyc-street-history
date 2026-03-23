@@ -25,9 +25,9 @@ struct ContentView: View {
     private var headerAccent: LinearGradient {
         LinearGradient(
             colors: [
-                Color(red: 0.12, green: 0.22, blue: 0.28),
-                Color(red: 0.42, green: 0.27, blue: 0.17),
-                Color(red: 0.79, green: 0.60, blue: 0.34)
+                Color(red: 0.16, green: 0.18, blue: 0.20),
+                Color(red: 0.34, green: 0.27, blue: 0.22),
+                Color(red: 0.70, green: 0.60, blue: 0.47)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -41,8 +41,8 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 headerAccent
-                    .frame(height: 220)
-                    .blur(radius: 12)
+                    .frame(height: 180)
+                    .blur(radius: 24)
                 Spacer()
             }
             .ignoresSafeArea()
@@ -212,13 +212,13 @@ struct ContentView: View {
                 .padding(22)
                 .background(
                     RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .fill(Color.white.opacity(0.90))
+                        .fill(Color.white.opacity(0.94))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.08), radius: 22, x: 0, y: 14)
+                .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 10)
                 .transition(.asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
                     removal: .opacity
@@ -250,12 +250,12 @@ struct ContentView: View {
             }
 
             Text(card.canonical_street ?? "Unknown street")
-                .font(.system(size: 40, weight: .heavy, design: .serif))
+                .font(.system(size: 32, weight: .bold, design: .serif))
                 .foregroundStyle(Color.black.opacity(0.94))
 
             if let namesake = historyNamesake(card), !namesake.isEmpty {
                 Text("Named for \(namesake)")
-                    .font(.headline.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
             }
 
@@ -264,17 +264,17 @@ struct ContentView: View {
             }
 
             Text("Street-name history for where you are standing now.")
-                .font(.subheadline.weight(.medium))
+                .font(.footnote.weight(.medium))
                 .foregroundStyle(.secondary)
         }
     }
 
     private func factSection(_ card: CardResponse) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("History")
-                        .font(.title3.weight(.heavy))
+                        .font(.title3.weight(.bold))
                     Text(historySectionKicker(card))
                         .font(.caption.weight(.bold))
                         .tracking(1.2)
@@ -293,10 +293,10 @@ struct ContentView: View {
                 imageURL: historyImageURL(card),
                 wikipediaSourceURL: historyImageSourceURL(card)
             )
-            .frame(height: 188)
+            .frame(height: 164)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .opacity((historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 1 : 0)
-            .frame(height: (historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 188 : 0)
+            .frame(height: (historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 164 : 0)
 
             Rectangle()
                 .fill(Color.black.opacity(0.08))
@@ -304,13 +304,13 @@ struct ContentView: View {
 
             if let dyk = historyBodyText(card), !dyk.isEmpty {
                 Text(dyk)
-                    .font(.system(size: 30, weight: .medium, design: .serif))
+                    .font(.system(size: 19, weight: .regular, design: .serif))
                     .foregroundStyle(Color.black.opacity(0.95))
-                    .lineSpacing(7)
+                    .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("No street-name history loaded yet.")
-                    .font(.title3.weight(.medium))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(.secondary)
             }
 
@@ -327,11 +327,11 @@ struct ContentView: View {
 
                     if let source = historySource(card), let label = source.label, !label.isEmpty {
                         Text(label)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.footnote.weight(.semibold))
                             .foregroundStyle(Color.black.opacity(0.84))
                     } else {
                         Text("This entry still needs a proper namesake source.")
-                            .font(.subheadline.weight(.semibold))
+                            .font(.footnote.weight(.semibold))
                             .foregroundStyle(Color.black.opacity(0.72))
                     }
                 }
@@ -382,22 +382,19 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(14)
-                    .background(Color.white.opacity(0.45), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(Color.black.opacity(0.025), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(22)
+        .padding(20)
         .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.98, green: 0.95, blue: 0.88),
-                    Color(red: 0.96, green: 0.92, blue: 0.82)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
+            Color(red: 0.97, green: 0.95, blue: 0.90),
             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.black.opacity(0.04), lineWidth: 1)
         )
     }
 
@@ -416,7 +413,7 @@ struct ContentView: View {
                 .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
 
             Text(title)
-                .font(.title2.weight(.heavy))
+                .font(.title2.weight(.bold))
 
             Text(body)
                 .font(.body)
@@ -451,7 +448,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(Color.black.opacity(0.05), in: Capsule())
+        .background(Color.black.opacity(0.04), in: Capsule())
     }
 
     private func categoryColor(_ category: String) -> Color {
