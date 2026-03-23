@@ -295,18 +295,6 @@ struct ContentView: View {
                 .foregroundStyle(Color.black.opacity(0.94))
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let namesake = historyNamesake(card), !namesake.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("NAME")
-                        .font(.caption2.weight(.black))
-                        .tracking(1.3)
-                        .foregroundStyle(.secondary)
-                    Text(namesake)
-                        .font(.system(size: 21, weight: .semibold, design: .serif))
-                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
-                }
-            }
-
             if let cross = card.cross_street, !cross.isEmpty {
                 labelChip(title: "Crossing", value: cross)
             }
@@ -318,14 +306,8 @@ struct ContentView: View {
             let historyParts = splitHistory(card)
 
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("History")
-                        .font(.headline.weight(.bold))
-                    Text(historySectionKicker(card))
-                        .font(.caption2.weight(.black))
-                        .tracking(1.5)
-                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
-                }
+                Text("History")
+                    .font(.headline.weight(.bold))
 
                 Spacer()
 
@@ -541,18 +523,6 @@ struct ContentView: View {
         }
     }
 
-    private func historySectionKicker(_ card: CardResponse) -> String {
-        if let text = historyBodyText(card)?.lowercased() {
-            if text.contains("named for") {
-                return "WHO THIS STREET IS NAMED FOR"
-            }
-            if text.contains("no street-name history loaded yet") || text.contains("street-name history is still being added") {
-                return "HISTORY STILL MISSING"
-            }
-        }
-        return "WHY THIS STREET HAS THIS NAME"
-    }
-
     private func historyBodyText(_ card: CardResponse) -> String? {
         let rawText = card.history?.blurb ?? card.history_blurb ?? card.did_you_know
         guard var text = rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
@@ -576,10 +546,6 @@ struct ContentView: View {
         }
 
         return text
-    }
-
-    private func historyNamesake(_ card: CardResponse) -> String? {
-        card.history?.namesake ?? card.namesake
     }
 
     private func splitHistory(_ card: CardResponse) -> (deck: String?, body: String?) {
