@@ -50,7 +50,6 @@ struct ContentView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     statusBar
-                    journeyBanner
                     mainCard
                 }
                 .padding(.horizontal, 18)
@@ -124,12 +123,43 @@ struct ContentView: View {
 
             Spacer()
 
-            Button {
-                showHistory = true
-            } label: {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.headline)
-                    .foregroundStyle(Color.black.opacity(0.72))
+            if isAuthorized {
+                if journeyStore.isJourneyActive, let session = journeyStore.currentSession {
+                    Menu {
+                        Button("Stop journey", role: .destructive) {
+                            journeyStore.stopJourney()
+                        }
+                        Button("Journey history") {
+                            showHistory = true
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "figure.walk")
+                                .font(.caption.weight(.bold))
+                            Text("\(session.visits.count)")
+                                .font(.caption.weight(.bold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.82), in: Capsule())
+                        .foregroundStyle(.white)
+                    }
+                } else {
+                    Menu {
+                        Button("Start journey") {
+                            Task {
+                                await journeyStore.startJourney()
+                            }
+                        }
+                        Button("Journey history") {
+                            showHistory = true
+                        }
+                    } label: {
+                        Image(systemName: "figure.walk.circle")
+                            .font(.headline)
+                            .foregroundStyle(Color.black.opacity(0.72))
+                    }
+                }
             }
 
             if !isAuthorized {
@@ -143,60 +173,6 @@ struct ContentView: View {
             }
         }
         .padding(.horizontal, 2)
-    }
-
-    private var journeyBanner: some View {
-        Group {
-            if journeyStore.isJourneyActive, let session = journeyStore.currentSession {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Journey in progress")
-                            .font(.headline.weight(.heavy))
-                        Text("\(session.visits.count) named streets logged")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button("Stop") {
-                        journeyStore.stopJourney()
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.82), in: Capsule())
-                    .foregroundStyle(.white)
-                }
-                .padding(16)
-                .background(Color(red: 0.91, green: 0.88, blue: 0.79), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            } else if isAuthorized {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Walk mode")
-                            .font(.subheadline.weight(.heavy))
-                        Text("Optional. Log named streets during a walk.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button("Start journey") {
-                        Task {
-                            await journeyStore.startJourney()
-                        }
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color(red: 0.12, green: 0.22, blue: 0.28), in: Capsule())
-                    .foregroundStyle(.white)
-                }
-                .padding(16)
-                .background(Color.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            }
-        }
     }
 
     private var mainCard: some View {
@@ -242,6 +218,21 @@ struct ContentView: View {
 
     private func heroSection(_ card: CardResponse) -> some View {
         VStack(alignment: .leading, spacing: 12) {
+            let hasHeroImage = historyImageURL(card) != nil || historyImageSourceURL(card) != nil
+
+            if hasHeroImage {
+                HistoryImageView(
+                    imageURL: historyImageURL(card),
+                    wikipediaSourceURL: historyImageSourceURL(card)
+                )
+                .frame(height: 220)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                )
+            }
+
             if let placeLine {
                 Text(placeLine.uppercased())
                     .font(.caption.weight(.bold))
@@ -264,7 +255,7 @@ struct ContentView: View {
             }
 
             Text("Street-name history for where you are standing now.")
-                .font(.footnote.weight(.medium))
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -288,19 +279,6 @@ struct ContentView: View {
                     .tracking(1.8)
                     .foregroundStyle(Color.black.opacity(0.35))
             }
-
-            HistoryImageView(
-                imageURL: historyImageURL(card),
-                wikipediaSourceURL: historyImageSourceURL(card)
-            )
-            .frame(height: 164)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .opacity((historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 1 : 0)
-            .frame(height: (historyImageURL(card) != nil || historyImageSourceURL(card) != nil) ? 164 : 0)
-
-            Rectangle()
-                .fill(Color.black.opacity(0.08))
-                .frame(height: 1)
 
             if let dyk = historyBodyText(card), !dyk.isEmpty {
                 Text(dyk)
