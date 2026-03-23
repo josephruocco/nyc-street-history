@@ -164,11 +164,8 @@ def card(lat: float, lon: float, acc: float = 25.0):
             image_source_url = fact.get("image_source_url")
             sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
 
-    if not did_you_know and neighborhood:
-        history_blurb = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}. You’re in {neighborhood['name']}."
-        did_you_know = history_blurb
-    elif not did_you_know:
-        history_blurb = f"No street-name history loaded yet for {prettify_street_name(street.get('primary_name'))}."
+    if not did_you_know:
+        history_blurb = f"Street history for {prettify_street_name(street.get('primary_name'))} is still being researched."
         did_you_know = history_blurb
 
     response = CardResponse(

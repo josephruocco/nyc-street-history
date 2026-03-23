@@ -46,6 +46,9 @@ class FactFallbackWiringRegressionTests(unittest.TestCase):
         self.assertIn("NAMESAKE=NAMESAKE", self.main_source)
         self.assertIn("HISTORY_BLURB=HISTORY_BLURB", self.main_source)
 
+    def test_missing_history_uses_blunt_research_fallback(self):
+        self.assertIn('HISTORY_BLURB = F"STREET HISTORY FOR {PRETTIFY_STREET_NAME(STREET.GET(\'PRIMARY_NAME\'))} IS STILL BEING RESEARCHED."', self.main_source)
+
 
 if __name__ == "__main__":
     unittest.main()
