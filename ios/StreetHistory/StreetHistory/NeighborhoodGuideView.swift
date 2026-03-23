@@ -46,10 +46,28 @@ enum NeighborhoodGuideStore {
                     streets: ["Mercer Street", "Greene Street", "Wooster Street", "Broome Street", "Spring Street", "Prince Street"]
                 ),
                 NeighborhoodGuide(
+                    neighborhood: "Tribeca",
+                    borough: "Manhattan",
+                    summary: "Short blocks packed with old family names, mercantile routes, and lower-Manhattan street remnants.",
+                    streets: ["Chambers Street", "Reade Street", "Duane Street", "Worth Street", "Hudson Street", "Greenwich Street", "West Broadway"]
+                ),
+                NeighborhoodGuide(
+                    neighborhood: "Civic Center",
+                    borough: "Manhattan",
+                    summary: "The legal-administrative core of Manhattan, where named streets sit inside a dense institutional landscape.",
+                    streets: ["Chambers Street", "Centre Street", "Pearl Street", "Beekman Street", "Park Row", "City Hall Park"]
+                ),
+                NeighborhoodGuide(
                     neighborhood: "Financial District",
                     borough: "Manhattan",
                     summary: "The oldest layer of Manhattan street naming, where shoreline, commerce, and colonial power remain on the map.",
                     streets: ["Wall Street", "Pearl Street", "Maiden Lane", "Beekman Street", "Broad Street", "Stone Street", "Fulton Street"]
+                ),
+                NeighborhoodGuide(
+                    neighborhood: "Greenwich Village",
+                    borough: "Manhattan",
+                    summary: "A pre-grid village street pattern where names, bends, and older routes survive more visibly than in midtown.",
+                    streets: ["Bleecker Street", "MacDougal Street", "Christopher Street", "Hudson Street", "Waverly Place", "Washington Square Park"]
                 )
             ]
         ),
@@ -79,6 +97,24 @@ enum NeighborhoodGuideStore {
                     borough: "Brooklyn",
                     summary: "A quieter historic district where civic and waterfront history meet one of Brooklyn's oldest residential areas.",
                     streets: ["Montague Street", "Joralemon Street", "Pierrepont Street", "Hicks Street", "Henry Street", "Brooklyn Heights Promenade"]
+                ),
+                NeighborhoodGuide(
+                    neighborhood: "DUMBO",
+                    borough: "Brooklyn",
+                    summary: "A former industrial waterfront where old ferry and warehouse-era street names survive inside redevelopment.",
+                    streets: ["Water Street", "Front Street", "Old Fulton Street", "Jay Street", "Washington Street", "Dock Street"]
+                ),
+                NeighborhoodGuide(
+                    neighborhood: "Boerum Hill",
+                    borough: "Brooklyn",
+                    summary: "A neighborhood where Brooklyn's family-name streets and civic corridors become easy to read on foot.",
+                    streets: ["Smith Street", "Hoyt Street", "Bond Street", "Wyckoff Street", "Atlantic Avenue", "Court Street"]
+                ),
+                NeighborhoodGuide(
+                    neighborhood: "Bushwick",
+                    borough: "Brooklyn",
+                    summary: "A deeper inland grid of old family names, brewery history, and industrial-era connectors.",
+                    streets: ["DeBevoise Avenue", "Knickerbocker Avenue", "Flushing Avenue", "Bushwick Avenue", "Cooper Park", "Morgan Avenue"]
                 )
             ]
         )
