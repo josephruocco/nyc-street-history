@@ -315,6 +315,8 @@ struct ContentView: View {
 
     private func factSection(_ card: CardResponse) -> some View {
         VStack(alignment: .leading, spacing: 18) {
+            let historyParts = splitHistory(card)
+
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("History")
@@ -332,9 +334,18 @@ struct ContentView: View {
                     .foregroundStyle(Color.black.opacity(0.38))
             }
 
-            if let dyk = historyBodyText(card), !dyk.isEmpty {
-                Text(dyk)
-                    .font(.system(size: 18, weight: .regular, design: .serif))
+            if let deck = historyParts.deck {
+                Text(deck)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                    .lineSpacing(3)
+                    .frame(maxWidth: 305, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let body = historyParts.body {
+                Text(body)
+                    .font(.system(size: 17, weight: .regular, design: .serif))
                     .foregroundStyle(Color.black.opacity(0.95))
                     .lineSpacing(6)
                     .frame(maxWidth: 305, alignment: .leading)
@@ -569,6 +580,30 @@ struct ContentView: View {
 
     private func historyNamesake(_ card: CardResponse) -> String? {
         card.history?.namesake ?? card.namesake
+    }
+
+    private func splitHistory(_ card: CardResponse) -> (deck: String?, body: String?) {
+        guard let text = historyBodyText(card), !text.isEmpty else {
+            return (nil, nil)
+        }
+
+        let sentences = text
+            .split(separator: ".")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        guard let first = sentences.first else {
+            return (nil, text)
+        }
+
+        if sentences.count == 1 {
+            return (nil, text)
+        }
+
+        let deck = first + "."
+        let remainder = sentences.dropFirst().joined(separator: ". ")
+        let body = remainder.isEmpty ? text : remainder + "."
+        return (deck, body)
     }
 
     private func historyImageURL(_ card: CardResponse) -> String? {
