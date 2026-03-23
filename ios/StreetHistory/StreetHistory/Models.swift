@@ -39,6 +39,10 @@ struct CardResponse: Codable {
     let borough: String?
     let neighborhood: String?
     let mode: String
+    let namesake: String?
+    let history_blurb: String?
+    let image_url: String?
+    let image_source_url: String?
     let did_you_know: String?
     let nearby: [NearbyItem]
     let sources: [FactSource]?

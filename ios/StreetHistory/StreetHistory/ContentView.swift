@@ -279,9 +279,45 @@ struct ContentView: View {
                     .foregroundStyle(Color.black.opacity(0.35))
             }
 
+            if let imageURL = card.image_url,
+               let url = URL(string: imageURL) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure(_):
+                        historyImageFallback
+                    case .empty:
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.black.opacity(0.05))
+                            ProgressView()
+                        }
+                    @unknown default:
+                        historyImageFallback
+                    }
+                }
+                .frame(height: 188)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+
             Rectangle()
                 .fill(Color.black.opacity(0.08))
                 .frame(height: 1)
+
+            if let namesake = card.namesake, !namesake.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Named for")
+                        .font(.caption.weight(.bold))
+                        .tracking(0.8)
+                        .foregroundStyle(.secondary)
+                    Text(namesake)
+                        .font(.system(size: 26, weight: .semibold, design: .serif))
+                        .foregroundStyle(Color.black.opacity(0.92))
+                }
+            }
 
             if let dyk = historyBodyText(card), !dyk.isEmpty {
                 Text(dyk)
@@ -523,7 +559,8 @@ struct ContentView: View {
     }
 
     private func historyBodyText(_ card: CardResponse) -> String? {
-        guard var text = card.did_you_know?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+        let rawText = card.history_blurb ?? card.did_you_know
+        guard var text = rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
             return nil
         }
 
@@ -544,6 +581,16 @@ struct ContentView: View {
         }
 
         return text
+    }
+
+    private var historyImageFallback: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black.opacity(0.05))
+            Image(systemName: "photo")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
