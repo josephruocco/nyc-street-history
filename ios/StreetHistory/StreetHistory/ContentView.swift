@@ -249,41 +249,45 @@ struct ContentView: View {
                 .font(.system(size: 40, weight: .heavy, design: .serif))
                 .foregroundStyle(Color.black.opacity(0.94))
 
-            HStack(spacing: 10) {
-                labelChip(title: "Street", value: modeLabel(card.mode))
-                if let cross = card.cross_street, !cross.isEmpty {
-                    labelChip(title: "Crossing", value: cross)
-                }
+            if let cross = card.cross_street, !cross.isEmpty {
+                labelChip(title: "Crossing", value: cross)
             }
 
-            if let cross = card.cross_street, !cross.isEmpty {
-                Text("Street-name history for where you are standing now.")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Street-name history for where you are standing now.")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
+            Text("Street-name history for where you are standing now.")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 
     private func factSection(_ card: CardResponse) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Street name history")
-                    .font(.title2.weight(.heavy))
-                Text(historySectionKicker(card))
-                    .font(.caption.weight(.bold))
-                    .tracking(1.0)
-                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Encyclopedia Entry")
+                        .font(.title3.weight(.heavy))
+                    Text(historySectionKicker(card))
+                        .font(.caption.weight(.bold))
+                        .tracking(1.2)
+                        .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                }
+
+                Spacer()
+
+                Text("NYC")
+                    .font(.caption.weight(.black))
+                    .tracking(1.8)
+                    .foregroundStyle(Color.black.opacity(0.35))
             }
+
+            Rectangle()
+                .fill(Color.black.opacity(0.08))
+                .frame(height: 1)
 
             if let dyk = card.did_you_know, !dyk.isEmpty {
                 Text(dyk)
-                    .font(.system(size: 31, weight: .semibold, design: .serif))
-                    .foregroundStyle(Color.black.opacity(0.93))
-                    .lineSpacing(6)
+                    .font(.system(size: 30, weight: .medium, design: .serif))
+                    .foregroundStyle(Color.black.opacity(0.95))
+                    .lineSpacing(7)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("No street-name history loaded yet.")
@@ -291,27 +295,34 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: card.sources?.first?.label == nil ? "character.book.closed" : "books.vertical")
-                    .font(.headline)
-                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+            Rectangle()
+                .fill(Color.black.opacity(0.08))
+                .frame(height: 1)
 
+            HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
+                    Text(card.sources?.first?.label == nil ? "Coverage note" : "Source")
+                        .font(.caption.weight(.bold))
+                        .tracking(0.6)
+                        .foregroundStyle(.secondary)
+
                     if let source = card.sources?.first, let label = source.label, !label.isEmpty {
-                        Text("Source")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
                         Text(label)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Color.black.opacity(0.84))
                     } else {
-                        Text("Coverage note")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
-                        Text("This street still needs a stronger namesake entry.")
+                        Text("This entry still needs a proper namesake source.")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Color.black.opacity(0.72))
                     }
+                }
+
+                Spacer()
+
+                if let source = card.sources?.first, let url = source.url, !url.isEmpty {
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.headline)
+                        .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
                 }
             }
         }
