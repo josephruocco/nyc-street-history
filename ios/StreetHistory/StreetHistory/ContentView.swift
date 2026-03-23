@@ -25,9 +25,9 @@ struct ContentView: View {
     private var headerAccent: LinearGradient {
         LinearGradient(
             colors: [
-                Color(red: 0.16, green: 0.18, blue: 0.20),
-                Color(red: 0.34, green: 0.27, blue: 0.22),
-                Color(red: 0.70, green: 0.60, blue: 0.47)
+                Color(red: 0.09, green: 0.10, blue: 0.11),
+                Color(red: 0.20, green: 0.16, blue: 0.13),
+                Color(red: 0.44, green: 0.33, blue: 0.22)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -36,13 +36,22 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.95, green: 0.93, blue: 0.89)
+            Color(red: 0.92, green: 0.89, blue: 0.84)
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 headerAccent
-                    .frame(height: 180)
-                    .blur(radius: 24)
+                    .frame(height: 164)
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.18),
+                                Color.clear
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 Spacer()
             }
             .ignoresSafeArea()
@@ -187,14 +196,14 @@ struct ContentView: View {
                 }
                 .padding(22)
                 .background(
-                    RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .fill(Color.white.opacity(0.94))
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color(red: 0.985, green: 0.975, blue: 0.95))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 10)
+                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
                 .transition(.asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
                     removal: .opacity
@@ -229,15 +238,15 @@ struct ContentView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 )
             }
 
             if let placeLine {
                 Text(placeLine.uppercased())
                     .font(.caption.weight(.bold))
-                    .tracking(1.3)
-                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                    .tracking(1.6)
+                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
             }
 
             Text(card.canonical_street ?? "Unknown street")
@@ -246,8 +255,8 @@ struct ContentView: View {
 
             if let namesake = historyNamesake(card), !namesake.isEmpty {
                 Text("Named for \(namesake)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
             }
 
             if let cross = card.cross_street, !cross.isEmpty {
@@ -269,15 +278,14 @@ struct ContentView: View {
                     Text(historySectionKicker(card))
                         .font(.caption.weight(.bold))
                         .tracking(1.2)
-                        .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
                 }
 
                 Spacer()
 
-                Text("NYC")
-                    .font(.caption.weight(.black))
-                    .tracking(1.8)
-                    .foregroundStyle(Color.black.opacity(0.35))
+                Image(systemName: "book.closed")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.black.opacity(0.38))
             }
 
             if let dyk = historyBodyText(card), !dyk.isEmpty {
@@ -293,7 +301,7 @@ struct ContentView: View {
             }
 
             Rectangle()
-                .fill(Color.black.opacity(0.08))
+                .fill(Color.black.opacity(0.10))
                 .frame(height: 1)
 
             HStack(alignment: .top, spacing: 12) {
@@ -327,7 +335,7 @@ struct ContentView: View {
                             Image(systemName: "arrow.up.right.square")
                                 .font(.caption.weight(.semibold))
                         }
-                        .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
                     }
                 }
             }
@@ -360,19 +368,19 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(14)
-                    .background(Color.black.opacity(0.025), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(Color(red: 0.94, green: 0.92, blue: 0.87), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(20)
         .background(
-            Color(red: 0.97, green: 0.95, blue: 0.90),
-            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+            Color(red: 0.95, green: 0.92, blue: 0.84),
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.black.opacity(0.04), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
         )
     }
 
@@ -426,7 +434,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(Color.black.opacity(0.04), in: Capsule())
+        .background(Color(red: 0.93, green: 0.92, blue: 0.90), in: Capsule())
     }
 
     private func categoryColor(_ category: String) -> Color {
