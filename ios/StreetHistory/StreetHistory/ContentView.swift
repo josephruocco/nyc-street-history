@@ -276,13 +276,6 @@ struct ContentView: View {
                 .foregroundStyle(Color.black.opacity(0.94))
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let namesake = card.history?.namesake ?? card.namesake, !namesake.isEmpty {
-                Text("Named for \(namesake)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
             if let cross = card.cross_street, !cross.isEmpty {
                 labelChip(title: "Crossing", value: cross)
             }
