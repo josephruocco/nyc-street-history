@@ -9,7 +9,9 @@ struct ContentView: View {
 
     @State private var fetchTask: Task<Void, Never>?
     @State private var isUpdating = false
+    @State private var significantMoveCount = 0
     @State private var showJourneyPrompt = false
+    @State private var journeyPromptOffered = false
     @State private var showHistory = false
     @State private var showStreetContext = false
     @State private var showExploreBrowser = false
@@ -43,6 +45,8 @@ struct ContentView: View {
         .onChange(of: lm.significantLocation) { _, loc in
             guard isAuthorized, let loc else { return }
 
+            significantMoveCount += 1
+
             isUpdating = true
             fetchTask?.cancel()
             fetchTask = Task {
@@ -51,8 +55,14 @@ struct ContentView: View {
                 if let card = vm.card {
                     journeyStore.record(card: card, location: loc)
                 }
-                if !journeyStore.isJourneyActive && !showJourneyPrompt {
-                    showJourneyPrompt = true
+                if !journeyStore.isJourneyActive && !showJourneyPrompt && !journeyPromptOffered {
+                    // Only suggest a journey when movement looks like actual walking:
+                    // speed > 0.5 m/s (walking pace) OR three significant GPS moves (~45m)
+                    let isWalking = (loc.speed > 0.5 && loc.speedAccuracy >= 0) || significantMoveCount >= 3
+                    if isWalking {
+                        showJourneyPrompt = true
+                        journeyPromptOffered = true
+                    }
                 }
             }
         }
@@ -266,6 +276,13 @@ struct ContentView: View {
                 .foregroundStyle(Color.black.opacity(0.94))
                 .fixedSize(horizontal: false, vertical: true)
 
+            if let namesake = card.history?.namesake ?? card.namesake, !namesake.isEmpty {
+                Text("Named for \(namesake)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             if let cross = card.cross_street, !cross.isEmpty {
                 labelChip(title: "Crossing", value: cross)
             }
@@ -341,6 +358,36 @@ struct ContentView: View {
                         .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
                     }
                 }
+            }
+
+            if card.mode == "NUMBERED_STREET" {
+                Button {
+                    showExploreBrowser = true
+                } label: {
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(systemName: "map")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                            .padding(.top, 1)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Find named streets")
+                                .font(.footnote.weight(.bold))
+                                .foregroundStyle(Color.black.opacity(0.88))
+                            Text("This part of \(card.borough ?? "the city") uses a numbered grid. See neighborhoods with richer street-name history.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
+                    }
+                    .padding(14)
+                    .background(Color(red: 0.94, green: 0.92, blue: 0.87), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
 
             if !uniqueNearby(card.nearby).isEmpty {

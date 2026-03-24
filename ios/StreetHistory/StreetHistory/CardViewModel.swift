@@ -34,20 +34,34 @@ final class CardViewModel: ObservableObject {
         if now.timeIntervalSince(lastFetchTime) < 2.0 { return }
         lastFetchTime = now
 
+        let acc = max(location.horizontalAccuracy, 10)
+        let lat = location.coordinate.latitude
+        let lon = location.coordinate.longitude
+
         do {
-            let acc = max(location.horizontalAccuracy, 10)
-            let res = try await api.fetchCard(
-                lat: location.coordinate.latitude,
-                lon: location.coordinate.longitude,
-                acc: acc
-            )
+            let res = try await api.fetchCard(lat: lat, lon: lon, acc: acc)
             card = res
             errorText = nil
             lastUpdatedAt = now
             persist(res)
         } catch {
-            // Keep cached card; show error
-            errorText = error.localizedDescription
+            guard !Task.isCancelled else { return }
+
+            // Server may be cold-starting (Render free tier). Retry once after a short delay.
+            errorText = "Server is warming up, retrying…"
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+
+            do {
+                let res = try await api.fetchCard(lat: lat, lon: lon, acc: acc)
+                card = res
+                errorText = nil
+                lastUpdatedAt = Date()
+                persist(res)
+            } catch {
+                guard !Task.isCancelled else { return }
+                errorText = "Could not reach server. Move around or check your connection."
+            }
         }
     }
 
