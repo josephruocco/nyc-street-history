@@ -6,7 +6,36 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA1DEADB00000009 /* StreetHistoryWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA1DEADB00000001 /* StreetHistoryWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AA1DEADB0000000B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D97D819D2F3BE49800933D15 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA1DEADB0000000D;
+			remoteInfo = StreetHistoryWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AA1DEADB0000000A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AA1DEADB00000009 /* StreetHistoryWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		AA1DEADB00000001 /* StreetHistoryWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StreetHistoryWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D97D81A52F3BE49800933D15 /* StreetHistory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StreetHistory.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +50,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AA1DEADB00000004 /* StreetHistoryWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = StreetHistoryWidgets;
+			sourceTree = "<group>";
+		};
 		D97D81A72F3BE49800933D15 /* StreetHistory */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +66,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AA1DEADB00000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D97D81A22F3BE49800933D15 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				D97D81A72F3BE49800933D15 /* StreetHistory */,
+				AA1DEADB00000004 /* StreetHistoryWidgets */,
 				D97D81A62F3BE49800933D15 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				D97D81A52F3BE49800933D15 /* StreetHistory.app */,
+				AA1DEADB00000001 /* StreetHistoryWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +104,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AA1DEADB0000000D /* StreetHistoryWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA1DEADB00000010 /* Build configuration list for PBXNativeTarget "StreetHistoryWidgets" */;
+			buildPhases = (
+				AA1DEADB00000007 /* Sources */,
+				AA1DEADB00000005 /* Frameworks */,
+				AA1DEADB00000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AA1DEADB00000004 /* StreetHistoryWidgets */,
+			);
+			name = StreetHistoryWidgets;
+			packageProductDependencies = (
+			);
+			productName = StreetHistoryWidgets;
+			productReference = AA1DEADB00000001 /* StreetHistoryWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		D97D81A42F3BE49800933D15 /* StreetHistory */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D97D81B02F3BE49A00933D15 /* Build configuration list for PBXNativeTarget "StreetHistory" */;
@@ -68,10 +133,12 @@
 				D97D81A12F3BE49800933D15 /* Sources */,
 				D97D81A22F3BE49800933D15 /* Frameworks */,
 				D97D81A32F3BE49800933D15 /* Resources */,
+				AA1DEADB0000000A /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AA1DEADB0000000C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				D97D81A72F3BE49800933D15 /* StreetHistory */,
@@ -93,6 +160,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					AA1DEADB0000000D = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					D97D81A42F3BE49800933D15 = {
 						CreatedOnToolsVersion = 26.2;
 						LastSwiftMigration = 2620;
@@ -114,11 +184,19 @@
 			projectRoot = "";
 			targets = (
 				D97D81A42F3BE49800933D15 /* StreetHistory */,
+				AA1DEADB0000000D /* StreetHistoryWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AA1DEADB00000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D97D81A32F3BE49800933D15 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -129,6 +207,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AA1DEADB00000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D97D81A12F3BE49800933D15 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -138,7 +223,72 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		AA1DEADB0000000C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA1DEADB0000000D /* StreetHistoryWidgets */;
+			targetProxy = AA1DEADB0000000B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		AA1DEADB0000000E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6BZ5M39S4D;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = StreetHistoryWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.josephruocco.StreetHistory.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA1DEADB0000000F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6BZ5M39S4D;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = StreetHistoryWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.josephruocco.StreetHistory.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		D97D81AE2F3BE49A00933D15 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -271,7 +421,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StreetHistory/Info.plist;
 				INFOPLIST_KEY_APIBaseURL = "https://nyc-street-history.onrender.com";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StreetHistory uses your location to show the street you’re on and a nearby “did you know?” fact.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StreetHistory uses your location to show the street you're on and a nearby \U201cdid you know?\U201d fact.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -308,7 +458,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StreetHistory/Info.plist;
 				INFOPLIST_KEY_APIBaseURL = "https://nyc-street-history.onrender.com";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StreetHistory uses your location to show the street you’re on and a nearby “did you know?” fact.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StreetHistory uses your location to show the street you're on and a nearby \U201cdid you know?\U201d fact.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -334,6 +484,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AA1DEADB00000010 /* Build configuration list for PBXNativeTarget "StreetHistoryWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA1DEADB0000000E /* Debug */,
+				AA1DEADB0000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D97D81A02F3BE49800933D15 /* Build configuration list for PBXProject "StreetHistory" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
