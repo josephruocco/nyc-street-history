@@ -9,9 +9,6 @@ struct ContentView: View {
 
     @State private var fetchTask: Task<Void, Never>?
     @State private var isUpdating = false
-    @State private var significantMoveCount = 0
-    @State private var showJourneyPrompt = false
-    @State private var journeyPromptOffered = false
     @State private var showHistory = false
     @State private var showStreetContext = false
     @State private var showExploreBrowser = false
@@ -44,9 +41,6 @@ struct ContentView: View {
 
         .onChange(of: lm.significantLocation) { _, loc in
             guard isAuthorized, let loc else { return }
-
-            significantMoveCount += 1
-
             isUpdating = true
             fetchTask?.cancel()
             fetchTask = Task {
@@ -54,15 +48,6 @@ struct ContentView: View {
                 await vm.update(for: loc)
                 if let card = vm.card {
                     journeyStore.record(card: card, location: loc)
-                }
-                if !journeyStore.isJourneyActive && !showJourneyPrompt && !journeyPromptOffered {
-                    // Only suggest a journey when movement looks like actual walking:
-                    // speed > 0.5 m/s (walking pace) OR three significant GPS moves (~45m)
-                    let isWalking = (loc.speed > 0.5 && loc.speedAccuracy >= 0) || significantMoveCount >= 3
-                    if isWalking {
-                        showJourneyPrompt = true
-                        journeyPromptOffered = true
-                    }
                 }
             }
         }
@@ -75,16 +60,7 @@ struct ContentView: View {
             if isAuthorized {
                 lm.requestPermissionAndStart()
             }
-        }
-        .alert("Start a journey?", isPresented: $showJourneyPrompt) {
-            Button("Not now", role: .cancel) {}
-            Button("Start") {
-                Task {
-                    await journeyStore.startJourney()
-                }
-            }
-        } message: {
-            Text("If you start a journey, the app will log the named streets you visit and notify you when you reach a new one.")
+            journeyStore.startMotionMonitoring()
         }
         .sheet(isPresented: $showHistory) {
             JourneyHistoryView(journeyStore: journeyStore)
@@ -151,15 +127,8 @@ struct ContentView: View {
                         .foregroundStyle(.white)
                     }
                 } else {
-                    Menu {
-                        Button("Start journey") {
-                            Task {
-                                await journeyStore.startJourney()
-                            }
-                        }
-                        Button("Journey history") {
-                            showHistory = true
-                        }
+                    Button {
+                        showHistory = true
                     } label: {
                         Image(systemName: "figure.walk.circle")
                             .font(.headline)

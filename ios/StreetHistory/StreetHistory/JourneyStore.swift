@@ -1,5 +1,6 @@
 import Foundation
 import CoreLocation
+import CoreMotion
 import Combine
 import UserNotifications
 import ActivityKit
@@ -62,9 +63,13 @@ final class JourneyStore: ObservableObject {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    // Stored as Any? so the stored property compiles on all OS versions.
-    // Accessed and cast only through the live activity helpers below.
+    // Live Activity (Any? avoids availability-restricted stored property)
     private var currentLiveActivity: Any?
+
+    // Motion auto-detection
+    private let motionManager = CMMotionActivityManager()
+    private var walkStartTimer: Timer?
+    private var autoStopTimer: Timer?
 
     init() {
         encoder.dateEncodingStrategy = .iso8601
@@ -81,8 +86,46 @@ final class JourneyStore: ObservableObject {
         }
     }
 
-    var isJourneyActive: Bool {
-        currentSession != nil
+    var isJourneyActive: Bool { currentSession != nil }
+
+    // MARK: - Motion monitoring
+
+    func startMotionMonitoring() {
+        guard CMMotionActivityManager.isActivityAvailable() else { return }
+        motionManager.startActivityUpdates(to: .main) { [weak self] activity in
+            guard let self, let activity else { return }
+            Task { @MainActor in
+                if activity.walking || activity.running {
+                    self.handleWalkingDetected()
+                } else if activity.stationary || activity.automotive {
+                    self.handleMovementStopped()
+                }
+            }
+        }
+    }
+
+    private func handleWalkingDetected() {
+        autoStopTimer?.invalidate()
+        autoStopTimer = nil
+        guard currentSession == nil, walkStartTimer == nil else { return }
+        // Auto-start after 20 consecutive seconds of walking
+        walkStartTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.walkStartTimer = nil
+            Task { await self.startJourney() }
+        }
+    }
+
+    private func handleMovementStopped() {
+        walkStartTimer?.invalidate()
+        walkStartTimer = nil
+        guard currentSession != nil, autoStopTimer == nil else { return }
+        // Auto-stop after 90 seconds of no movement
+        autoStopTimer = Timer.scheduledTimer(withTimeInterval: 90, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.autoStopTimer = nil
+            self.stopJourney()
+        }
     }
 
     func startJourney() async {
