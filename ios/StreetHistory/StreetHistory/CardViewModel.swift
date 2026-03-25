@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import CoreLocation
+import WidgetKit
 
 @MainActor
 final class CardViewModel: ObservableObject {
@@ -68,6 +69,18 @@ final class CardViewModel: ObservableObject {
     private func persist(_ card: CardResponse) {
         if let data = try? JSONEncoder().encode(card) {
             UserDefaults.standard.set(data, forKey: cacheKey)
+        }
+        // Write to App Group so the home screen / lock screen widget can read it
+        if let street = card.canonical_street, !street.isEmpty, card.mode == "NAMED_STREET" {
+            SharedStreetCard(
+                streetName: street,
+                neighborhood: card.neighborhood,
+                borough: card.borough,
+                factSnippet: card.did_you_know,
+                namesake: card.history?.namesake ?? card.namesake,
+                updatedAt: Date()
+            ).save()
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 }
