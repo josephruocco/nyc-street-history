@@ -14,11 +14,37 @@ final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate 
 @main
 struct StreetHistoryApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var journeyStore = JourneyStore()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootTabView()
+                .environmentObject(journeyStore)
         }
+    }
+}
+
+struct RootTabView: View {
+    @EnvironmentObject var journeyStore: JourneyStore
+
+    var body: some View {
+        TabView {
+            ContentView()
+                .tabItem {
+                    Label("Street", systemImage: "location.fill")
+                }
+
+            StreetMapView()
+                .tabItem {
+                    Label("Map", systemImage: "map")
+                }
+
+            JourneyHistoryTab(journeyStore: journeyStore)
+                .tabItem {
+                    Label("Walks", systemImage: "figure.walk")
+                }
+        }
+        .tint(Color(red: 0.40, green: 0.24, blue: 0.14))
     }
 }
 

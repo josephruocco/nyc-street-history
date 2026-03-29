@@ -1,12 +1,19 @@
 import SwiftUI
+import CoreLocation
 
 struct NeighborhoodGuide: Identifiable, Hashable {
     let neighborhood: String
     let borough: String
     let summary: String
     let streets: [String]
+    let latitude: Double
+    let longitude: Double
 
     var id: String { "\(borough)|\(neighborhood)" }
+
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
 }
 
 struct BoroughGuide: Identifiable {
@@ -25,49 +32,57 @@ enum NeighborhoodGuideStore {
                     neighborhood: "Lower East Side",
                     borough: "Manhattan",
                     summary: "Dense old Manhattan grid with estate names, immigrant corridors, and some of the city's strongest street-name history.",
-                    streets: ["Delancey Street", "Chrystie Street", "Essex Street", "Orchard Street", "Ludlow Street", "Allen Street", "Rivington Street", "Stanton Street", "Norfolk Street", "Suffolk Street", "Clinton Street"]
+                    streets: ["Delancey Street", "Chrystie Street", "Essex Street", "Orchard Street", "Ludlow Street", "Allen Street", "Rivington Street", "Stanton Street", "Norfolk Street", "Suffolk Street", "Clinton Street"],
+                    latitude: 40.7157, longitude: -73.9863
                 ),
                 NeighborhoodGuide(
                     neighborhood: "East Village",
                     borough: "Manhattan",
                     summary: "A mix of old named streets and the alphabet avenues, where the grid itself becomes part of the story.",
-                    streets: ["Stuyvesant Street", "Avenue A", "Avenue B", "Avenue C", "Avenue D", "Houston Street", "Tompkins Square Park"]
+                    streets: ["Stuyvesant Street", "Avenue A", "Avenue B", "Avenue C", "Avenue D", "Houston Street", "Tompkins Square Park"],
+                    latitude: 40.7264, longitude: -73.9815
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Chinatown",
                     borough: "Manhattan",
                     summary: "Older lower-Manhattan street names layered with later immigrant commercial history.",
-                    streets: ["Mott Street", "Mulberry Street", "Canal Street", "Bayard Street", "Doyers Street"]
+                    streets: ["Mott Street", "Mulberry Street", "Canal Street", "Bayard Street", "Doyers Street"],
+                    latitude: 40.7157, longitude: -73.9969
                 ),
                 NeighborhoodGuide(
                     neighborhood: "SoHo",
                     borough: "Manhattan",
                     summary: "A smaller concentration of named streets with stronger individual namesake stories and cast-iron city history.",
-                    streets: ["Mercer Street", "Greene Street", "Wooster Street", "Broome Street", "Spring Street", "Prince Street"]
+                    streets: ["Mercer Street", "Greene Street", "Wooster Street", "Broome Street", "Spring Street", "Prince Street"],
+                    latitude: 40.7236, longitude: -74.0030
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Tribeca",
                     borough: "Manhattan",
                     summary: "Short blocks packed with old family names, mercantile routes, and lower-Manhattan street remnants.",
-                    streets: ["Chambers Street", "Reade Street", "Duane Street", "Worth Street", "Hudson Street", "Greenwich Street", "West Broadway"]
+                    streets: ["Chambers Street", "Reade Street", "Duane Street", "Worth Street", "Hudson Street", "Greenwich Street", "West Broadway"],
+                    latitude: 40.7163, longitude: -74.0086
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Civic Center",
                     borough: "Manhattan",
                     summary: "The legal-administrative core of Manhattan, where named streets sit inside a dense institutional landscape.",
-                    streets: ["Chambers Street", "Centre Street", "Pearl Street", "Beekman Street", "Park Row", "City Hall Park"]
+                    streets: ["Chambers Street", "Centre Street", "Pearl Street", "Beekman Street", "Park Row", "City Hall Park"],
+                    latitude: 40.7135, longitude: -74.0040
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Financial District",
                     borough: "Manhattan",
                     summary: "The oldest layer of Manhattan street naming, where shoreline, commerce, and colonial power remain on the map.",
-                    streets: ["Wall Street", "Pearl Street", "Maiden Lane", "Beekman Street", "Broad Street", "Stone Street", "Fulton Street"]
+                    streets: ["Wall Street", "Pearl Street", "Maiden Lane", "Beekman Street", "Broad Street", "Stone Street", "Fulton Street"],
+                    latitude: 40.7074, longitude: -74.0113
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Greenwich Village",
                     borough: "Manhattan",
                     summary: "A pre-grid village street pattern where names, bends, and older routes survive more visibly than in midtown.",
-                    streets: ["Bleecker Street", "MacDougal Street", "Christopher Street", "Hudson Street", "Waverly Place", "Washington Square Park"]
+                    streets: ["Bleecker Street", "MacDougal Street", "Christopher Street", "Hudson Street", "Waverly Place", "Washington Square Park"],
+                    latitude: 40.7335, longitude: -74.0027
                 )
             ]
         ),
@@ -78,43 +93,50 @@ enum NeighborhoodGuideStore {
                     neighborhood: "Williamsburg",
                     borough: "Brooklyn",
                     summary: "One of the best places to walk for named streets in north Brooklyn, with merchants, ferries, industrial families, and old grid history all mixed together.",
-                    streets: ["Withers Street", "Bedford Avenue", "Lorimer Street", "Graham Avenue", "Metropolitan Avenue", "Wythe Avenue", "Kent Avenue", "Berry Street", "Roebling Street", "Havemeyer Street", "Keap Street", "Hewes Street"]
+                    streets: ["Withers Street", "Bedford Avenue", "Lorimer Street", "Graham Avenue", "Metropolitan Avenue", "Wythe Avenue", "Kent Avenue", "Berry Street", "Roebling Street", "Havemeyer Street", "Keap Street", "Hewes Street"],
+                    latitude: 40.7081, longitude: -73.9571
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Greenpoint",
                     borough: "Brooklyn",
                     summary: "A strong waterfront grid of family names, trade names, and industrial-era north Brooklyn history.",
-                    streets: ["Nassau Avenue", "Manhattan Avenue", "Franklin Street", "Greenpoint Avenue", "Calyer Street", "Meserole Avenue", "India Street", "Java Street", "Dupont Street", "Norman Avenue", "Monitor Street", "Kingsland Avenue", "Eckford Street"]
+                    streets: ["Nassau Avenue", "Manhattan Avenue", "Franklin Street", "Greenpoint Avenue", "Calyer Street", "Meserole Avenue", "India Street", "Java Street", "Dupont Street", "Norman Avenue", "Monitor Street", "Kingsland Avenue", "Eckford Street"],
+                    latitude: 40.7290, longitude: -73.9540
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Downtown Brooklyn",
                     borough: "Brooklyn",
                     summary: "Brooklyn's old civic center, where court, ferry, and founder-era names are packed into a short walk.",
-                    streets: ["Jay Street", "Court Street", "Smith Street", "Atlantic Avenue", "Old Fulton Street", "Borough Hall", "Cadman Plaza Park"]
+                    streets: ["Jay Street", "Court Street", "Smith Street", "Atlantic Avenue", "Old Fulton Street", "Borough Hall", "Cadman Plaza Park"],
+                    latitude: 40.6924, longitude: -73.9900
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Brooklyn Heights",
                     borough: "Brooklyn",
                     summary: "A quieter historic district where civic and waterfront history meet one of Brooklyn's oldest residential areas.",
-                    streets: ["Montague Street", "Joralemon Street", "Pierrepont Street", "Hicks Street", "Henry Street", "Brooklyn Heights Promenade"]
+                    streets: ["Montague Street", "Joralemon Street", "Pierrepont Street", "Hicks Street", "Henry Street", "Brooklyn Heights Promenade"],
+                    latitude: 40.6969, longitude: -73.9947
                 ),
                 NeighborhoodGuide(
                     neighborhood: "DUMBO",
                     borough: "Brooklyn",
                     summary: "A former industrial waterfront where old ferry and warehouse-era street names survive inside redevelopment.",
-                    streets: ["Water Street", "Front Street", "Old Fulton Street", "Jay Street", "Washington Street", "Dock Street"]
+                    streets: ["Water Street", "Front Street", "Old Fulton Street", "Jay Street", "Washington Street", "Dock Street"],
+                    latitude: 40.7033, longitude: -73.9881
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Boerum Hill",
                     borough: "Brooklyn",
                     summary: "A neighborhood where Brooklyn's family-name streets and civic corridors become easy to read on foot.",
-                    streets: ["Smith Street", "Hoyt Street", "Bond Street", "Wyckoff Street", "Atlantic Avenue", "Court Street"]
+                    streets: ["Smith Street", "Hoyt Street", "Bond Street", "Wyckoff Street", "Atlantic Avenue", "Court Street"],
+                    latitude: 40.6876, longitude: -73.9907
                 ),
                 NeighborhoodGuide(
                     neighborhood: "Bushwick",
                     borough: "Brooklyn",
                     summary: "A deeper inland grid of old family names, brewery history, and industrial-era connectors.",
-                    streets: ["DeBevoise Avenue", "Knickerbocker Avenue", "Flushing Avenue", "Bushwick Avenue", "Cooper Park", "Morgan Avenue"]
+                    streets: ["DeBevoise Avenue", "Knickerbocker Avenue", "Flushing Avenue", "Bushwick Avenue", "Cooper Park", "Morgan Avenue"],
+                    latitude: 40.6942, longitude: -73.9218
                 )
             ]
         )

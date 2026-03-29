@@ -5,11 +5,10 @@ import Combine
 struct ContentView: View {
     @StateObject private var lm = LocationManager()
     @StateObject private var vm = CardViewModel()
-    @StateObject private var journeyStore = JourneyStore()
+    @EnvironmentObject private var journeyStore: JourneyStore
 
     @State private var fetchTask: Task<Void, Never>?
     @State private var isUpdating = false
-    @State private var showHistory = false
     @State private var showStreetContext = false
     @State private var showExploreBrowser = false
     @State private var selectedNeighborhoodGuide: NeighborhoodGuide?
@@ -62,9 +61,6 @@ struct ContentView: View {
             }
             journeyStore.startMotionMonitoring()
         }
-        .sheet(isPresented: $showHistory) {
-            JourneyHistoryView(journeyStore: journeyStore)
-        }
         .fullScreenCover(isPresented: $showStreetContext) {
             if let card = vm.card {
                 StreetContextPage(card: card)
@@ -107,13 +103,8 @@ struct ContentView: View {
                 }
 
                 if journeyStore.isJourneyActive, let session = journeyStore.currentSession {
-                    Menu {
-                        Button("Stop journey", role: .destructive) {
-                            journeyStore.stopJourney()
-                        }
-                        Button("Journey history") {
-                            showHistory = true
-                        }
+                    Button {
+                        journeyStore.stopJourney()
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "figure.walk")
@@ -125,14 +116,6 @@ struct ContentView: View {
                         .padding(.vertical, 8)
                         .background(Color.black.opacity(0.82), in: Capsule())
                         .foregroundStyle(.white)
-                    }
-                } else {
-                    Button {
-                        showHistory = true
-                    } label: {
-                        Image(systemName: "figure.walk.circle")
-                            .font(.headline)
-                            .foregroundStyle(Color.black.opacity(0.72))
                     }
                 }
             }
