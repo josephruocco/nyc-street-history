@@ -33,7 +33,7 @@ GUIDE_ENTRIES: list[tuple[str, str, str, str | None]] = [
     ("bayard street",        "Bayard Street",        "Bayard_Street_(Manhattan)",              "Nicholas Bayard"),
     # Manhattan – SoHo
     ("greene street",        "Greene Street",        "Greene_Street_(Manhattan)",              "Nathanael Greene"),
-    ("wooster street",       "Wooster Street",       "Wooster_Street",                         "David Wooster"),
+    ("wooster street",       "Wooster Street",       "Wooster_Street_(Manhattan)",              "David Wooster"),
     ("broome street",        "Broome Street",        "Broome_Street",                          "John Broome"),
     ("spring street",        "Spring Street",        "Spring_Street_(Manhattan)",              None),
     ("prince street",        "Prince Street",        "Prince_Street_(Manhattan)",              None),
@@ -62,15 +62,8 @@ GUIDE_ENTRIES: list[tuple[str, str, str, str | None]] = [
     ("montague street",      "Montague Street",      "Montague_Street_(Brooklyn)",             "Lady Mary Wortley Montagu"),
     ("joralemon street",     "Joralemon Street",     "Joralemon_Street",                       "Teunis Joralemon"),
     ("pierrepont street",    "Pierrepont Street",    "Pierrepont_Street",                      "Hezekiah Beers Pierrepont"),
-    ("hicks street",         "Hicks Street",         "Hicks_Street_(Brooklyn)",                None),
-    ("henry street",         "Henry Street",         "Henry_Street_(Brooklyn)",                None),
-    # Brooklyn – DUMBO
-    ("washington street",    "Washington Street",    "Washington_Street_(DUMBO,_Brooklyn)",    "George Washington"),
-    ("front street",         "Front Street",         "Front_Street_(Brooklyn)",                None),
-    ("water street",         "Water Street",         "Water_Street_(Brooklyn,_New_York)",      None),
-    # Brooklyn – Boerum Hill
-    ("hoyt street",          "Hoyt Street",          "Hoyt_Street_(Brooklyn)",                 None),
-    ("bond street",          "Bond Street",          "Bond_Street_(Brooklyn)",                 None),
+    # NOTE: hicks, henry, washington, front, water, hoyt, bond — no standalone Wikipedia articles.
+    # Those are written as manual rows in facts_seed.csv instead.
     ("wyckoff street",       "Wyckoff Street",       "Wyckoff_Street",                         None),
     # Brooklyn – Bushwick
     ("knickerbocker avenue", "Knickerbocker Avenue", "Knickerbocker_Avenue",                   None),
@@ -92,7 +85,14 @@ def load_existing_keys(path: Path) -> set[str]:
         return {row["key_value"].strip().lower() for row in reader}
 
 
+_DISAM_PATTERNS = re.compile(
+    r"may refer to:|may also refer to:|can refer to:|is a disambiguation",
+    re.IGNORECASE,
+)
+
+
 def fetch_summary(title: str) -> dict | None:
+    """Fetch Wikipedia REST summary; returns None for 404s and disambiguation pages."""
     encoded = urllib.parse.quote(title, safe="_()")
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded}"
     req = urllib.request.Request(
@@ -103,7 +103,7 @@ def fetch_summary(title: str) -> dict | None:
         with urllib.request.urlopen(req, timeout=12) as resp:
             if resp.status != 200:
                 return None
-            return json.loads(resp.read())
+            data = json.loads(resp.read())
     except urllib.error.HTTPError as e:
         if e.code != 404:
             print(f"  HTTP {e.code} for {title}", file=sys.stderr)
@@ -112,6 +112,13 @@ def fetch_summary(title: str) -> dict | None:
         print(f"  Error for {title}: {e}", file=sys.stderr)
         return None
 
+    if data.get("type") == "disambiguation":
+        return None
+    extract = data.get("extract", "")
+    if _DISAM_PATTERNS.search(extract):
+        return None
+    return data
+
 
 def trim_extract(text: str, max_sentences: int = 2) -> str:
     text = re.sub(r"\s+", " ", text).strip()
@@ -119,6 +126,25 @@ def trim_extract(text: str, max_sentences: int = 2) -> str:
     text = re.sub(r"\s*\([^)]*°[^)]*\)\s*", " ", text).strip()
     sentences = re.split(r"(?<=[.!?])\s+", text)
     return " ".join(sentences[:max_sentences]).strip()
+
+
+_NYC_TERMS = re.compile(
+    r"\b(Manhattan|Brooklyn|Queens|Bronx|Staten Island|New York City|NYC|"
+    r"New York,|New Amsterdam|Lower Manhattan|borough of Manhattan|borough of Brooklyn)\b",
+    re.IGNORECASE,
+)
+
+
+def score_confidence(extract: str, has_image: bool) -> str:
+    """Heuristic confidence: higher if the article clearly describes a NYC street."""
+    score = 0.70
+    if _NYC_TERMS.search(extract):
+        score += 0.08
+    if has_image:
+        score += 0.05
+    if len(extract) > 200:
+        score += 0.03
+    return f"{min(score, 0.95):.2f}"
 
 
 def build_row(
@@ -139,6 +165,8 @@ def build_row(
         if m:
             namesake = m.group(1).strip()
 
+    confidence = score_confidence(extract, bool(image_url))
+
     return {
         "key_type": "street_name",
         "key_value": key,
@@ -149,7 +177,7 @@ def build_row(
         "image_source_url": wiki_url,
         "source_label": "Wikipedia",
         "source_url": wiki_url,
-        "confidence": "0.75",
+        "confidence": confidence,
     }
 
 
@@ -174,15 +202,7 @@ def main(dry_run: bool = False) -> None:
             new_rows.append(build_row(key, data, namesake_hint))
             print("✓")
         else:
-            # Try plain display name as fallback title
-            fallback_title = display_name.replace(" ", "_")
-            data2 = fetch_summary(fallback_title)
-            time.sleep(0.35)
-            if data2 and data2.get("extract"):
-                new_rows.append(build_row(key, data2, namesake_hint))
-                print("✓ (fallback)")
-            else:
-                print("✗  no Wikipedia article found")
+            print("✗  no usable Wikipedia article (404, disambiguation, or wrong city)")
 
     print()
     print(f"Already covered:  {len(skipped)}")

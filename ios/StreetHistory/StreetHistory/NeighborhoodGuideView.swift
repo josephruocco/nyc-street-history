@@ -137,6 +137,13 @@ enum NeighborhoodGuideStore {
                     summary: "A deeper inland grid of old family names, brewery history, and industrial-era connectors.",
                     streets: ["DeBevoise Avenue", "Knickerbocker Avenue", "Flushing Avenue", "Bushwick Avenue", "Cooper Park", "Morgan Avenue"],
                     latitude: 40.6942, longitude: -73.9218
+                ),
+                NeighborhoodGuide(
+                    neighborhood: "Flatbush & Ditmas Park",
+                    borough: "Brooklyn",
+                    summary: "Dutch colonial roots meet an early 20th-century English-village grid — some of the richest layered street-name history in Brooklyn.",
+                    streets: ["Cortelyou Road", "Flatbush Avenue", "Church Avenue", "Newkirk Avenue", "Caton Avenue", "Albemarle Road", "Beverly Road", "Marlborough Road"],
+                    latitude: 40.6446, longitude: -73.9650
                 )
             ]
         )
