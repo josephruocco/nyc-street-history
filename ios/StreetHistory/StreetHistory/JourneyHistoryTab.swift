@@ -17,7 +17,7 @@ struct JourneyHistoryTab: View {
                     VStack(spacing: 16) {
                         Image(systemName: "figure.walk.circle")
                             .font(.system(size: 48, weight: .light))
-                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14).opacity(0.5))
+                            .foregroundStyle(Color.brandBrown.opacity(0.5))
                         Text("No walks yet")
                             .font(.title3.weight(.bold))
                         Text("Walk around NYC and the app will log the named streets you visit.")
@@ -27,7 +27,7 @@ struct JourneyHistoryTab: View {
                             .padding(.horizontal, 32)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(red: 0.92, green: 0.89, blue: 0.84).ignoresSafeArea())
+                    .background(Color.brandBackground.ignoresSafeArea())
                 } else {
                     List {
                         ForEach(journeyStore.sessions) { session in

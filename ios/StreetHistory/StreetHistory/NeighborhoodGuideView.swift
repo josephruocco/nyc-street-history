@@ -198,7 +198,7 @@ struct NeighborhoodGuideDetailView: View {
                             .font(.system(size: 34, weight: .black, design: .rounded))
                         Text(guide.borough)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                            .foregroundStyle(Color.brandBrown)
                         Text(guide.summary)
                             .font(.body)
                             .foregroundStyle(.secondary)
@@ -218,11 +218,11 @@ struct NeighborhoodGuideDetailView: View {
                         }
                     }
                     .padding(18)
-                    .background(Color(red: 0.95, green: 0.92, blue: 0.84), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .background(Color.brandCardBg, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
                 .padding(20)
             }
-            .background(Color(red: 0.92, green: 0.89, blue: 0.84).ignoresSafeArea())
+            .background(Color.brandBackground.ignoresSafeArea())
             .navigationTitle("Explore")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

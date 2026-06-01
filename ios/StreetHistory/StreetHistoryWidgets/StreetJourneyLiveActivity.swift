@@ -2,6 +2,9 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+private let liveBrown = liveBrown
+private let liveCream = liveCream
+
 struct StreetJourneyLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: StreetJourneyAttributes.self) { context in
@@ -31,11 +34,11 @@ struct StreetJourneyLiveActivity: Widget {
                 VStack(spacing: 2) {
                     Image(systemName: "figure.walk")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                        .foregroundStyle(liveBrown)
                     Text("\(context.state.streetsVisited)")
                         .font(.title3.weight(.black))
                         .monospacedDigit()
-                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                        .foregroundStyle(liveBrown)
                     Text("streets")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -43,7 +46,7 @@ struct StreetJourneyLiveActivity: Widget {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
-            .activityBackgroundTint(Color(red: 0.985, green: 0.975, blue: 0.95))
+            .activityBackgroundTint(liveCream)
             .activitySystemActionForegroundColor(Color.black)
 
         } dynamicIsland: { context in
@@ -57,7 +60,7 @@ struct StreetJourneyLiveActivity: Widget {
                         Image(systemName: "figure.walk")
                             .font(.caption.weight(.semibold))
                     }
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                    .foregroundStyle(liveBrown)
                     .padding(.leading, 4)
                 }
 
@@ -83,7 +86,7 @@ struct StreetJourneyLiveActivity: Widget {
             } compactLeading: {
                 Image(systemName: "figure.walk")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                    .foregroundStyle(liveBrown)
 
             } compactTrailing: {
                 Text(context.state.streetName)
@@ -94,10 +97,10 @@ struct StreetJourneyLiveActivity: Widget {
 
             } minimal: {
                 Image(systemName: "figure.walk")
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                    .foregroundStyle(liveBrown)
             }
             .widgetURL(URL(string: "streethistory://journey"))
-            .keylineTint(Color(red: 0.40, green: 0.24, blue: 0.14))
+            .keylineTint(liveBrown)
         }
     }
 }

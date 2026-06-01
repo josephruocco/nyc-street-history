@@ -2,6 +2,18 @@ import SwiftUI
 import CoreLocation
 import Combine
 
+private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
+    var seen = Set<String>()
+    var result: [NearbyItem] = []
+    for item in items {
+        let key = "\(item.name.lowercased())|\(item.category.lowercased())"
+        if seen.contains(key) { continue }
+        seen.insert(key)
+        result.append(item)
+    }
+    return result
+}
+
 struct ContentView: View {
     @StateObject private var lm = LocationManager()
     @StateObject private var vm = CardViewModel()
@@ -24,7 +36,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.92, green: 0.89, blue: 0.84)
+            Color.brandBackground
                 .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
@@ -53,13 +65,14 @@ struct ContentView: View {
         .onChange(of: lm.status) { _, _ in
             if isAuthorized {
                 lm.requestPermissionAndStart()
+                journeyStore.startMotionMonitoring()
             }
         }
         .onAppear {
             if isAuthorized {
                 lm.requestPermissionAndStart()
+                journeyStore.startMotionMonitoring()
             }
-            journeyStore.startMotionMonitoring()
         }
         .fullScreenCover(isPresented: $showStreetContext) {
             if let card = vm.card {
@@ -88,7 +101,7 @@ struct ContentView: View {
             } else {
                 Label(isUpdating ? "Updating" : "Live", systemImage: isUpdating ? "location.circle.fill" : "dot.radiowaves.left.and.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(isUpdating ? Color(red: 0.42, green: 0.27, blue: 0.17) : Color(red: 0.12, green: 0.22, blue: 0.28))
+                    .foregroundStyle(isUpdating ? Color.brandBrownLight : Color(red: 0.12, green: 0.22, blue: 0.28))
             }
 
             Spacer()
@@ -103,8 +116,10 @@ struct ContentView: View {
                 }
 
                 if journeyStore.isJourneyActive, let session = journeyStore.currentSession {
-                    Button {
-                        journeyStore.stopJourney()
+                    Menu {
+                        Button("Stop journey", role: .destructive) {
+                            journeyStore.stopJourney()
+                        }
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "figure.walk")
@@ -116,6 +131,14 @@ struct ContentView: View {
                         .padding(.vertical, 8)
                         .background(Color.black.opacity(0.82), in: Capsule())
                         .foregroundStyle(.white)
+                    }
+                } else if !journeyStore.isJourneyActive {
+                    Button {
+                        Task { await journeyStore.startJourney() }
+                    } label: {
+                        Image(systemName: "figure.walk")
+                            .font(.headline)
+                            .foregroundStyle(Color.black.opacity(0.72))
                     }
                 }
             }
@@ -146,7 +169,7 @@ struct ContentView: View {
                 .padding(22)
                 .background(
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(Color(red: 0.985, green: 0.975, blue: 0.95))
+                        .fill(Color.brandCream)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
@@ -200,24 +223,24 @@ struct ContentView: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Circle()
-                                    .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
+                                    .fill(Color.brandBrown)
                                     .frame(width: 7, height: 7)
                                 Text(placeLine)
                                     .font(.footnote.weight(.semibold))
                                 Image(systemName: "chevron.right")
                                     .font(.caption2.weight(.bold))
                             }
-                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                            .foregroundStyle(Color.brandBrown)
                         }
                         .buttonStyle(.plain)
                     } else {
                         HStack(spacing: 8) {
                             Circle()
-                                .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
+                                .fill(Color.brandBrown)
                                 .frame(width: 7, height: 7)
                             Text(placeLine)
                                 .font(.footnote.weight(.semibold))
-                                .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                                .foregroundStyle(Color.brandBrown)
                         }
                     }
                 }
@@ -246,7 +269,7 @@ struct ContentView: View {
             if let deck = historyParts.deck {
                 Text(deck)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                    .foregroundStyle(Color.brandBrown)
                     .lineSpacing(3)
                     .frame(maxWidth: 305, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -300,7 +323,7 @@ struct ContentView: View {
                             Image(systemName: "arrow.up.right.square")
                                 .font(.caption.weight(.semibold))
                         }
-                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                        .foregroundStyle(Color.brandBrown)
                     }
                 }
             }
@@ -312,7 +335,7 @@ struct ContentView: View {
                     HStack(alignment: .top, spacing: 14) {
                         Image(systemName: "map")
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                            .foregroundStyle(Color.brandBrown)
                             .padding(.top, 1)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Find named streets")
@@ -335,7 +358,8 @@ struct ContentView: View {
                 .buttonStyle(.plain)
             }
 
-            if !uniqueNearby(card.nearby).isEmpty {
+            let dedupedNearby = uniqueNearby(card.nearby)
+            if !dedupedNearby.isEmpty {
                 Button {
                     showStreetContext = true
                 } label: {
@@ -351,7 +375,7 @@ struct ContentView: View {
 
                         Spacer()
 
-                        Text("\(uniqueNearby(card.nearby).count)")
+                        Text("\(dedupedNearby.count)")
                             .font(.caption.weight(.bold))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
@@ -370,7 +394,7 @@ struct ContentView: View {
         }
         .padding(20)
         .background(
-            Color(red: 0.95, green: 0.92, blue: 0.84),
+            Color.brandCardBg,
             in: RoundedRectangle(cornerRadius: 22, style: .continuous)
         )
         .overlay(
@@ -391,7 +415,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: systemImage)
                 .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(Color(red: 0.42, green: 0.27, blue: 0.17))
+                .foregroundStyle(Color.brandBrownLight)
 
             Text(title)
                 .font(.title2.weight(.bold))
@@ -457,28 +481,26 @@ struct ContentView: View {
         return text
     }
 
+    private static let sentenceBoundary = try! NSRegularExpression(
+        pattern: #"(?<=[.!?])\s+(?=[A-Z])"#
+    )
+
     private func splitHistory(_ card: CardResponse) -> (deck: String?, body: String?) {
         guard let text = historyBodyText(card), !text.isEmpty else {
             return (nil, nil)
         }
 
-        let sentences = text
-            .split(separator: ".")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let range = NSRange(text.startIndex..., in: text)
+        let matches = Self.sentenceBoundary.matches(in: text, range: range)
 
-        guard let first = sentences.first else {
+        guard let first = matches.first else {
             return (nil, text)
         }
 
-        if sentences.count == 1 {
-            return (nil, text)
-        }
-
-        let deck = first + "."
-        let remainder = sentences.dropFirst().joined(separator: ". ")
-        let body = remainder.isEmpty ? text : remainder + "."
-        return (deck, body)
+        let splitIndex = text.index(text.startIndex, offsetBy: first.range.location)
+        let deck = String(text[..<splitIndex]).trimmingCharacters(in: .whitespaces)
+        let body = String(text[splitIndex...]).trimmingCharacters(in: .whitespaces)
+        return (deck, body.isEmpty ? nil : body)
     }
 
     private func historyImageURL(_ card: CardResponse) -> String? {
@@ -501,20 +523,6 @@ struct ContentView: View {
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
-        var seen = Set<String>()
-        var result: [NearbyItem] = []
-
-        for item in items {
-            let key = "\(item.name.lowercased())|\(item.category.lowercased())"
-            if seen.contains(key) { continue }
-            seen.insert(key)
-            result.append(item)
-        }
-
-        return result
     }
 
     private func statusText(_ s: CLAuthorizationStatus) -> String {
@@ -568,20 +576,6 @@ private struct StreetContextPage: View {
             return String(format: "%.1f km away", Double(meters) / 1000.0)
         }
         return "\(meters)m away"
-    }
-
-    private func uniqueNearby(_ items: [NearbyItem]) -> [NearbyItem] {
-        var seen = Set<String>()
-        var result: [NearbyItem] = []
-
-        for item in items {
-            let key = "\(item.name.lowercased())|\(item.category.lowercased())"
-            if seen.contains(key) { continue }
-            seen.insert(key)
-            result.append(item)
-        }
-
-        return result
     }
 
     var body: some View {

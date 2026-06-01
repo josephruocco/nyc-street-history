@@ -44,7 +44,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				StreetHistoryWidgets.entitlements,
 			);
 			target = AA1DEADB0000000D /* StreetHistoryWidgets */;
 		};
@@ -52,7 +51,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				StreetHistory.entitlements,
 			);
 			target = D97D81A42F3BE49800933D15 /* StreetHistory */;
 		};

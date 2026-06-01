@@ -122,18 +122,12 @@ def row_to_params(row: dict) -> dict | None:
     }
 
 
-def ensure_unique_constraint(conn) -> None:
+def ensure_schema(conn) -> None:
     with conn.cursor() as cur:
         cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS namesake TEXT;")
         cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS history_blurb TEXT;")
         cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS image_url TEXT;")
         cur.execute("ALTER TABLE fact ADD COLUMN IF NOT EXISTS image_source_url TEXT;")
-        cur.execute(
-            """
-            CREATE UNIQUE INDEX IF NOT EXISTS uq_fact_key_type_value
-            ON fact (key_type, key_value);
-            """
-        )
     conn.commit()
 
 
@@ -164,7 +158,7 @@ def main() -> int:
             params.append(parsed)
 
     with psycopg.connect(db_url) as conn:
-        ensure_unique_constraint(conn)
+        ensure_schema(conn)
         with conn.cursor() as cur:
             if params:
                 cur.executemany(UPSERT_SQL, params)

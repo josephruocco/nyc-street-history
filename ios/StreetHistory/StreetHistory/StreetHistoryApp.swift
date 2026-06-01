@@ -44,7 +44,7 @@ struct RootTabView: View {
                     Label("Walks", systemImage: "figure.walk")
                 }
         }
-        .tint(Color(red: 0.40, green: 0.24, blue: 0.14))
+        .tint(Color.brandBrown)
     }
 }
 
