@@ -1,0 +1,64 @@
+aberdeen street
+alabama avenue
+bay parkway
+bay ridge avenue
+bergen street
+carroll street
+central avenue
+chauncey street
+clark street
+classon avenue
+cleveland street
+crescent street
+dekalb avenue
+ditmas avenue
+eastern parkway
+elderts lane
+euclid avenue
+forest avenue
+forest parkway
+fort hamilton parkway
+franklin avenue
+gates avenue
+grant avenue
+halsey street
+high street
+jefferson street
+junius street
+kingston avenue
+kosciuszko street
+lafayette avenue
+liberty avenue
+livonia avenue
+marcy avenue
+montrose avenue
+myrtle avenue
+neptune avenue
+nevins street
+new lots avenue
+new utrecht avenue
+norwood avenue
+nostrand avenue
+ocean parkway
+park place
+parkside avenue
+pennsylvania avenue
+president street
+prospect avenue
+ralph avenue
+rockaway avenue
+rockaway parkway
+saratoga avenue
+seneca avenue
+shepherd avenue
+sterling street
+stillwell avenue
+sutter avenue
+union street
+utica avenue
+van siclen avenue
+whitehall street
+wilson avenue
+winthrop street
+woodhaven boulevard
+york street
