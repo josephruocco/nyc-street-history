@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 
 from .cache import SimpleTTLCache, encode_geohash
 from .db import fetch_one, fetch_all
-from .models import CardResponse, NearbyItem, Source, HistoryEntry
+from .models import CardResponse, NearbyItem, Source, HistoryEntry, FactMapItem
 from .settings import settings
 from .queries import (
     SNAP_STREET_SQL,
@@ -13,6 +13,7 @@ from .queries import (
     FACT_BY_STREETNAME_SQL,
     FACT_BY_PLACENAME_SQL,
     CROSS_STREET_SQL,
+    FACTS_MAP_SQL,
 )
 
 app = FastAPI(title="NYC Street History API")
@@ -195,6 +196,12 @@ def card(lat: float, lon: float, acc: float = 25.0):
         else:
             CARD_CACHE.set(cache_key, response.dict(), ttl_seconds=CARD_CACHE_TTL_SECONDS)
     return response
+
+@app.get("/v1/facts/map", response_model=list[FactMapItem])
+def facts_map(min_confidence: float = 0.0):
+    rows = fetch_all(FACTS_MAP_SQL, {"min_confidence": min_confidence})
+    return [FactMapItem(**r) for r in rows]
+
 
 @app.get("/health")
 def health():

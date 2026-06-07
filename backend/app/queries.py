@@ -140,6 +140,28 @@ ORDER BY confidence DESC, updated_at DESC
 LIMIT 1;
 """
 
+FACTS_MAP_SQL = """
+SELECT
+  f.key_value AS street_name,
+  f.fact_text,
+  f.namesake,
+  f.source_label,
+  f.source_url,
+  f.confidence,
+  ST_Y(ST_Centroid(s.geom)) AS lat,
+  ST_X(ST_Centroid(s.geom)) AS lon
+FROM fact f
+JOIN LATERAL (
+  SELECT geom
+  FROM street_segment
+  WHERE LOWER(BTRIM(primary_name)) = LOWER(BTRIM(f.key_value))
+  LIMIT 1
+) s ON true
+WHERE f.key_type = 'street_name'
+  AND f.confidence >= :min_confidence
+ORDER BY f.key_value;
+"""
+
 CROSS_STREET_SQL = """
 WITH main AS (
   SELECT id, primary_name, geom

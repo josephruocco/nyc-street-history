@@ -21,6 +21,17 @@ class HistoryEntry(BaseModel):
     source: Optional[Source] = None
 
 
+class FactMapItem(BaseModel):
+    street_name: str
+    fact_text: str
+    namesake: Optional[str] = None
+    source_label: Optional[str] = None
+    source_url: Optional[str] = None
+    confidence: float
+    lat: float
+    lon: float
+
+
 class CardResponse(BaseModel):
     canonical_street: Optional[str] = None
     cross_street: Optional[str] = None

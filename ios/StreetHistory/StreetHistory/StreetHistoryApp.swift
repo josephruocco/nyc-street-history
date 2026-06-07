@@ -17,7 +17,18 @@ struct StreetHistoryApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                ContentView()
+                    .tabItem {
+                        Label("Street", systemImage: "text.book.closed")
+                    }
+
+                FactMapView()
+                    .tabItem {
+                        Label("Map", systemImage: "map")
+                    }
+            }
+            .tint(Color(red: 0.40, green: 0.24, blue: 0.14))
         }
     }
 }
