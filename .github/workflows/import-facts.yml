@@ -1,0 +1,24 @@
+name: Import facts to Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/data/facts_seed.csv'
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install psycopg
+
+      - name: Import facts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 backend/scripts/import_facts_csv.py backend/data/facts_seed.csv
