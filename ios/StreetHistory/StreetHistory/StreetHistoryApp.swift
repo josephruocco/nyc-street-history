@@ -15,26 +15,42 @@ final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate 
 struct StreetHistoryApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var journeyStore = JourneyStore()
+    @State private var showLaunch = true
 
     var body: some Scene {
         WindowGroup {
-            TabView {
-                ContentView(journeyStore: journeyStore)
-                    .tabItem {
-                        Label("Street", systemImage: "text.book.closed")
-                    }
+            ZStack {
+                TabView {
+                    ContentView(journeyStore: journeyStore)
+                        .tabItem {
+                            Label("Street", systemImage: "text.book.closed")
+                        }
 
-                FactMapView()
-                    .tabItem {
-                        Label("Map", systemImage: "map")
-                    }
+                    FactMapView()
+                        .tabItem {
+                            Label("Map", systemImage: "map")
+                        }
 
-                FavoritesView(journeyStore: journeyStore)
-                    .tabItem {
-                        Label("Favorites", systemImage: "heart")
-                    }
+                    FavoritesView(journeyStore: journeyStore)
+                        .tabItem {
+                            Label("Favorites", systemImage: "heart")
+                        }
+                }
+                .tint(Color(red: 0.40, green: 0.24, blue: 0.14))
+
+                if showLaunch {
+                    LaunchScreenView()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
             }
-            .tint(Color(red: 0.40, green: 0.24, blue: 0.14))
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        showLaunch = false
+                    }
+                }
+            }
         }
     }
 }
