@@ -91,7 +91,10 @@ final class FactMapViewModel: ObservableObject {
 
 struct FactMapView: View {
     @StateObject private var vm = FactMapViewModel()
+    @StateObject private var lm = LocationManager()
     @State private var selectedFact: FactMapItem?
+    @State private var nearbyIndex: Int = 0
+    @State private var nearbyMode = false
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var position: MapCameraPosition = .region(
@@ -107,6 +110,27 @@ struct FactMapView: View {
         return vm.facts.filter { $0.street_name.lowercased().contains(query) }
     }
 
+    private var nearbyFacts: [FactMapItem] {
+        guard let loc = lm.significantLocation else { return [] }
+        let userLat = loc.coordinate.latitude
+        let userLon = loc.coordinate.longitude
+        return vm.facts.sorted { a, b in
+            let dA = (a.lat - userLat) * (a.lat - userLat) + (a.lon - userLon) * (a.lon - userLon)
+            let dB = (b.lat - userLat) * (b.lat - userLat) + (b.lon - userLon) * (b.lon - userLon)
+            return dA < dB
+        }
+    }
+
+    private func distanceText(_ fact: FactMapItem) -> String? {
+        guard let loc = lm.significantLocation else { return nil }
+        let factLoc = CLLocation(latitude: fact.lat, longitude: fact.lon)
+        let meters = Int(loc.distance(from: factLoc))
+        if meters >= 1000 {
+            return String(format: "%.1f km away", Double(meters) / 1000.0)
+        }
+        return "\(meters)m away"
+    }
+
     var body: some View {
         ZStack {
             Map(position: $position) {
@@ -115,6 +139,7 @@ struct FactMapView: View {
                 ForEach(vm.facts) { fact in
                     Annotation(prettifyStreetName(fact.street_name), coordinate: fact.coordinate) {
                         Button {
+                            nearbyMode = false
                             selectedFact = fact
                         } label: {
                             Circle()
@@ -139,6 +164,7 @@ struct FactMapView: View {
 
                     Button {
                         withAnimation { showSearch.toggle() }
+                        nearbyMode = false
                         if !showSearch { searchText = "" }
                     } label: {
                         Image(systemName: showSearch ? "xmark" : "magnifyingglass")
@@ -148,12 +174,13 @@ struct FactMapView: View {
                     }
 
                     Button {
-                        position = .userLocation(fallback: .automatic)
+                        enterNearbyMode()
                     } label: {
-                        Image(systemName: "location.fill")
+                        Image(systemName: nearbyMode ? "location.fill" : "location")
                             .font(.caption.weight(.bold))
                             .padding(10)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .background(nearbyMode ? AnyShapeStyle(Color(red: 0.40, green: 0.24, blue: 0.14)) : AnyShapeStyle(.ultraThinMaterial), in: Circle())
+                            .foregroundStyle(nearbyMode ? .white : .primary)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -179,6 +206,7 @@ struct FactMapView: View {
                                     ForEach(searchResults.prefix(8)) { fact in
                                         Button {
                                             selectedFact = fact
+                                            nearbyMode = false
                                             position = .region(MKCoordinateRegion(
                                                 center: fact.coordinate,
                                                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
@@ -211,12 +239,16 @@ struct FactMapView: View {
 
                 Spacer()
 
-                if let fact = selectedFact {
-                    factCard(fact)
+                if nearbyMode && !nearbyFacts.isEmpty {
+                    nearbyCardCarousel
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if let fact = selectedFact {
+                    factCard(fact, showDistance: false)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: selectedFact?.id)
+            .animation(.easeInOut(duration: 0.25), value: nearbyMode)
 
             if vm.isLoading {
                 ProgressView("Loading facts…")
@@ -239,6 +271,71 @@ struct FactMapView: View {
         .task {
             await vm.load()
         }
+        .onAppear {
+            lm.requestPermissionAndStart()
+        }
+        .onChange(of: nearbyIndex) { _, idx in
+            guard nearbyMode, idx < nearbyFacts.count else { return }
+            let fact = nearbyFacts[idx]
+            withAnimation {
+                position = .region(MKCoordinateRegion(
+                    center: fact.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
+                ))
+            }
+        }
+    }
+
+    private func enterNearbyMode() {
+        showSearch = false
+        searchText = ""
+        selectedFact = nil
+        nearbyIndex = 0
+        nearbyMode = true
+        if let loc = lm.significantLocation {
+            position = .region(MKCoordinateRegion(
+                center: loc.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
+            ))
+        } else {
+            position = .userLocation(fallback: .automatic)
+        }
+    }
+
+    private var nearbyCardCarousel: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "location.fill")
+                    .font(.caption2.weight(.bold))
+                Text("Near you")
+                    .font(.caption.weight(.bold))
+                Text("·")
+                    .foregroundStyle(.secondary)
+                Text("\(nearbyIndex + 1) of \(min(nearbyFacts.count, 20))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    nearbyMode = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+            .padding(.horizontal, 18)
+
+            TabView(selection: $nearbyIndex) {
+                ForEach(Array(nearbyFacts.prefix(20).enumerated()), id: \.element.id) { idx, fact in
+                    factCard(fact, showDistance: true)
+                        .tag(idx)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 260)
+        }
+        .padding(.bottom, 8)
     }
 
     private var factCountBadge: some View {
@@ -253,7 +350,7 @@ struct FactMapView: View {
         .background(.ultraThinMaterial, in: Capsule())
     }
 
-    private func factCard(_ fact: FactMapItem) -> some View {
+    private func factCard(_ fact: FactMapItem, showDistance: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(prettifyStreetName(fact.street_name))
@@ -262,19 +359,31 @@ struct FactMapView: View {
 
                 Spacer()
 
-                Button {
-                    selectedFact = nil
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
+                if !nearbyMode {
+                    Button {
+                        selectedFact = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
-            if let namesake = fact.namesake, !namesake.isEmpty {
-                Text("Named for: \(namesake)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+            HStack(spacing: 10) {
+                if let namesake = fact.namesake, !namesake.isEmpty {
+                    Text("Named for: \(namesake)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
+                }
+                if showDistance, let dist = distanceText(fact) {
+                    Text(dist)
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.black.opacity(0.06), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Text(fact.fact_text)
@@ -304,7 +413,6 @@ struct FactMapView: View {
         )
         .shadow(color: Color.black.opacity(0.12), radius: 16, x: 0, y: 8)
         .padding(.horizontal, 16)
-        .padding(.bottom, 16)
     }
 
     private func confidencePill(_ confidence: Double) -> some View {
