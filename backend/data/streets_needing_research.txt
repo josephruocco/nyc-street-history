@@ -1,0 +1,25 @@
+# Streets deleted from facts_seed.csv: no verifiable namesake info was present.
+# Re-research these with proper namesake facts (no hyphens or em dashes, namesake first).
+bradford street
+butler place
+central avenue
+drew street
+dwight street
+fifth avenue
+grand street
+hampton place
+hausman street
+horace court
+ivy hill road
+jones walk
+maiden lane
+melrose street
+metropolitan avenue
+mill lane
+morgan avenue
+newel street
+norman avenue
+rockaway parkway
+russell street
+sutton street
+welling court
