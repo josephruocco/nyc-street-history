@@ -34,6 +34,7 @@ struct ContentView: View {
                     statusBar
                     mainCard
                     journeyCards
+                    versionFooter
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 18)
@@ -91,6 +92,16 @@ struct ContentView: View {
         .sheet(item: $selectedNeighborhoodGuide) { guide in
             NeighborhoodGuideDetailView(guide: guide)
         }
+    }
+
+    private var versionFooter: some View {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+        return Text("StreetLore v\(version) (\(build))")
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 6)
     }
 
     private var statusBar: some View {
