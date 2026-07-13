@@ -58,9 +58,14 @@ final class JourneyStore: ObservableObject {
     @Published var favorites: [StreetVisit] = []
     @Published var notificationsAuthorized = false
 
+    /// Every street ever seen in the card, lowercased. Grows whether or not
+    /// a journey is active, so "streets explored" keeps counting on any walk.
+    @Published private(set) var exploredStreets: Set<String> = []
+
     private let sessionsKey = "walk_sessions_v1"
     private let favoritesKey = "favorite_streets_v1"
     private let lastNotifiedStreetKey = "last_notified_street_v1"
+    private let exploredKey = "explored_streets_v1"
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -76,6 +81,13 @@ final class JourneyStore: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: favoritesKey),
            let stored = try? decoder.decode([StreetVisit].self, from: data) {
             favorites = stored
+        }
+
+        if let stored = UserDefaults.standard.stringArray(forKey: exploredKey) {
+            exploredStreets = Set(stored)
+        } else {
+            // seed from any walks recorded before the ledger existed
+            exploredStreets = Set(sessions.flatMap { $0.visits.map { $0.streetName.lowercased() } })
         }
 
         Task {
@@ -101,10 +113,26 @@ final class JourneyStore: ObservableObject {
         persistSessions()
     }
 
+    var streetsExploredCount: Int {
+        exploredStreets.count
+    }
+
     func record(card: CardResponse, location: CLLocation) {
-        guard var session = currentSession else { return }
         guard let streetName = card.canonical_street, !streetName.isEmpty else { return }
         guard card.mode == "NAMED_STREET" else { return }
+
+        let firstEver = !exploredStreets.contains(streetName.lowercased())
+        if firstEver {
+            exploredStreets.insert(streetName.lowercased())
+            UserDefaults.standard.set(Array(exploredStreets), forKey: exploredKey)
+        }
+
+        guard var session = currentSession else {
+            if firstEver {
+                notifyFirstVisit(streetName: streetName, card: card)
+            }
+            return
+        }
 
         if session.visits.last?.streetName == streetName {
             return
@@ -123,7 +151,7 @@ final class JourneyStore: ObservableObject {
 
         session.visits.append(visit)
         currentSession = session
-        notifyIfNeeded(for: visit)
+        notifyIfNeeded(for: visit, firstEver: firstEver)
     }
 
     func clearHistory() {
@@ -172,7 +200,7 @@ final class JourneyStore: ObservableObject {
         }
     }
 
-    private func requestNotificationPermissionIfNeeded() async {
+    func requestNotificationPermissionIfNeeded() async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         if settings.authorizationStatus == .authorized {
@@ -187,7 +215,24 @@ final class JourneyStore: ObservableObject {
         }
     }
 
-    private func notifyIfNeeded(for visit: StreetVisit) {
+    private func notifyFirstVisit(streetName: String, card: CardResponse) {
+        guard notificationsAuthorized else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "New street: \(streetName)"
+        if let fact = card.did_you_know, !fact.isEmpty, !fact.contains("still being researched") {
+            content.body = fact
+        } else {
+            content.body = "You've never walked this one before."
+        }
+        content.sound = .default
+
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: "first-\(UUID().uuidString)", content: content, trigger: nil)
+        )
+    }
+
+    private func notifyIfNeeded(for visit: StreetVisit, firstEver: Bool = false) {
         guard notificationsAuthorized else { return }
 
         let lastStreet = UserDefaults.standard.string(forKey: lastNotifiedStreetKey)
@@ -196,7 +241,7 @@ final class JourneyStore: ObservableObject {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = visit.streetName
+        content.title = firstEver ? "New street: \(visit.streetName)" : visit.streetName
         if let factSnippet = visit.factSnippet, !factSnippet.isEmpty {
             content.body = factSnippet
         } else if let cross = visit.crossStreet, !cross.isEmpty {
