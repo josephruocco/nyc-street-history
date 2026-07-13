@@ -58,14 +58,18 @@ final class JourneyStore: ObservableObject {
     @Published var favorites: [StreetVisit] = []
     @Published var notificationsAuthorized = false
 
-    /// Every street ever seen in the card, lowercased. Grows whether or not
-    /// a journey is active, so "streets explored" keeps counting on any walk.
-    @Published private(set) var exploredStreets: Set<String> = []
+    /// First time each named street was ever seen, lowercased name -> date.
+    /// Grows whether or not a journey is active, so "streets explored" and
+    /// streaks keep counting on any walk.
+    @Published private(set) var firstSeen: [String: Date] = [:]
+
+    var exploredStreets: Set<String> { Set(firstSeen.keys) }
 
     private let sessionsKey = "walk_sessions_v1"
     private let favoritesKey = "favorite_streets_v1"
     private let lastNotifiedStreetKey = "last_notified_street_v1"
     private let exploredKey = "explored_streets_v1"
+    private let firstSeenKey = "explored_first_seen_v1"
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -83,11 +87,23 @@ final class JourneyStore: ObservableObject {
             favorites = stored
         }
 
-        if let stored = UserDefaults.standard.stringArray(forKey: exploredKey) {
-            exploredStreets = Set(stored)
+        if let data = UserDefaults.standard.data(forKey: firstSeenKey),
+           let stored = try? decoder.decode([String: Date].self, from: data) {
+            firstSeen = stored
         } else {
-            // seed from any walks recorded before the ledger existed
-            exploredStreets = Set(sessions.flatMap { $0.visits.map { $0.streetName.lowercased() } })
+            // migrate the old name-only ledger (and any pre-ledger walks) to
+            // dated entries. We lack the real dates, so backfill to a fixed past
+            // day; only streaks from today forward matter.
+            let seed = Date(timeIntervalSince1970: 0)
+            var migrated: [String: Date] = [:]
+            for name in UserDefaults.standard.stringArray(forKey: exploredKey) ?? [] {
+                migrated[name] = seed
+            }
+            for visit in sessions.flatMap({ $0.visits }) {
+                migrated[visit.streetName.lowercased()] = visit.timestamp
+            }
+            firstSeen = migrated
+            persistFirstSeen()
         }
 
         Task {
@@ -114,17 +130,44 @@ final class JourneyStore: ObservableObject {
     }
 
     var streetsExploredCount: Int {
-        exploredStreets.count
+        firstSeen.count
+    }
+
+    /// Consecutive days, counting back from today, on which at least one
+    /// new street was discovered. Backfilled (epoch) entries don't count.
+    var currentStreak: Int {
+        let cal = Calendar.current
+        let days = Set(
+            firstSeen.values
+                .filter { $0.timeIntervalSince1970 > 86_400 }
+                .map { cal.startOfDay(for: $0) }
+        )
+        guard !days.isEmpty else { return 0 }
+
+        var cursor = cal.startOfDay(for: Date())
+        // allow the streak to be "alive" if today has no new street yet but
+        // yesterday did.
+        if !days.contains(cursor) {
+            cursor = cal.date(byAdding: .day, value: -1, to: cursor)!
+            if !days.contains(cursor) { return 0 }
+        }
+        var streak = 0
+        while days.contains(cursor) {
+            streak += 1
+            cursor = cal.date(byAdding: .day, value: -1, to: cursor)!
+        }
+        return streak
     }
 
     func record(card: CardResponse, location: CLLocation) {
         guard let streetName = card.canonical_street, !streetName.isEmpty else { return }
         guard card.mode == "NAMED_STREET" else { return }
 
-        let firstEver = !exploredStreets.contains(streetName.lowercased())
+        let key = streetName.lowercased()
+        let firstEver = firstSeen[key] == nil
         if firstEver {
-            exploredStreets.insert(streetName.lowercased())
-            UserDefaults.standard.set(Array(exploredStreets), forKey: exploredKey)
+            firstSeen[key] = Date()
+            persistFirstSeen()
         }
 
         guard var session = currentSession else {
@@ -186,6 +229,12 @@ final class JourneyStore: ObservableObject {
     func removeFavorite(at offsets: IndexSet) {
         favorites.remove(atOffsets: offsets)
         persistFavorites()
+    }
+
+    private func persistFirstSeen() {
+        if let data = try? encoder.encode(firstSeen) {
+            UserDefaults.standard.set(data, forKey: firstSeenKey)
+        }
     }
 
     private func persistFavorites() {
