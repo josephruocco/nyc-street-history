@@ -14,12 +14,40 @@ from .queries import (
     FACT_BY_PLACENAME_SQL,
     CROSS_STREET_SQL,
     FACTS_MAP_SQL,
+    is_numbered_or_lettered_street,
 )
 
 app = FastAPI(title="NYC Street History API")
 
-NUMBERED_PAT = re.compile(r"^(E|W)\s*\d+|^\d+(st|nd|rd|th)\b", re.IGNORECASE)
 ORDINAL_PAT = re.compile(r"^(\d+)(ST|ND|RD|TH)$", re.IGNORECASE)
+
+# Served for numbered/lettered streets with no specific fact row.
+GRID_FACT_SOURCE = Source(
+    label="Wikipedia",
+    url="https://en.wikipedia.org/wiki/Commissioners%27_Plan_of_1811",
+)
+GRID_FACTS = {
+    "manhattan": (
+        "Commissioners' Plan of 1811",
+        "The number here comes from the Commissioners' Plan of 1811, the survey that stamped a single grid of numbered streets and avenues across Manhattan above Houston Street. Surveyor John Randel Jr. spent nearly a decade planting marble markers at every future corner, dodging dogs, lawsuits, and angry farmers whose orchards sat in the path of the streets to come.",
+    ),
+    "bronx": (
+        "Commissioners' Plan of 1811, extended north",
+        "Bronx street numbers continue Manhattan's grid across the Harlem River. When the city annexed the Bronx in 1874 and 1895, the numbering of the Commissioners' Plan of 1811 simply kept counting northward, which is why the borough starts in the 130s instead of at 1.",
+    ),
+    "queens": (
+        "The 1920s Queens renumbering (Philadelphia Plan)",
+        "Queens street numbers come from the borough wide renumbering of the 1920s, often called the Philadelphia Plan. It replaced a patchwork of duplicate village street names with one numbered grid, and it is why a Queens address also tells you the nearest cross street.",
+    ),
+    "brooklyn": (
+        "Brooklyn's 19th century street grids",
+        "Brooklyn's numbered streets come from the separate grids of the old city of Brooklyn and its neighboring towns, laid out in the 19th century and stitched together when the borough joined New York City in 1898. That patchwork is why Brooklyn has plain, North, South, East, West, and Bay numbered streets that never quite line up.",
+    ),
+}
+GRID_FACT_DEFAULT = (
+    "The street grid",
+    "Numbered streets like this one were laid out by 19th and early 20th century surveyors who favored grids because straight streets and right angles were the cheapest to build, sell, and navigate.",
+)
 NAMED_FOR_PATTERNS = [
     re.compile(r"\b(?:is|was)\s+named\s+for\s+([^.,;]+)", re.IGNORECASE),
     re.compile(r"\b(?:is|was)\s+named\s+after\s+([^.,;]+)", re.IGNORECASE),
@@ -82,7 +110,7 @@ def prettify_street_name(name: str | None) -> str | None:
 def classify_mode(street_name: str | None) -> str:
     if not street_name:
         return "NEAR"
-    if NUMBERED_PAT.search(street_name):
+    if is_numbered_or_lettered_street(street_name):
         return "NUMBERED_STREET"
     return "NAMED_STREET"
 
@@ -144,7 +172,7 @@ def card(lat: float, lon: float, acc: float = 25.0):
     image_source_url = None
     sources: list[Source] = []
 
-    if mode == "NAMED_STREET":
+    if mode in ("NAMED_STREET", "NUMBERED_STREET"):
         fact = None
 
         if street.get("street_code"):
@@ -164,6 +192,12 @@ def card(lat: float, lon: float, acc: float = 25.0):
             image_url = fact.get("image_url")
             image_source_url = fact.get("image_source_url")
             sources.append(Source(label=fact.get("source_label") or "source", url=fact.get("source_url")))
+
+    if not did_you_know and mode == "NUMBERED_STREET":
+        borough_key = (street.get("borough") or "").strip().lower()
+        namesake, history_blurb = GRID_FACTS.get(borough_key, GRID_FACT_DEFAULT)
+        did_you_know = history_blurb
+        sources.append(GRID_FACT_SOURCE)
 
     if not did_you_know:
         history_blurb = f"Street history for {prettify_street_name(street.get('primary_name'))} is still being researched."
