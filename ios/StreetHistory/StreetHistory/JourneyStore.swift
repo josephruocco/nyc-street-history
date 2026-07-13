@@ -376,7 +376,7 @@ final class JourneyStore: ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = "It's the weekend"
-        content.body = "The B's asleep and half the L is rerouted, but that never stops New York."
+        content.body = "The B and the G won't play this weekend, but New York never skips a beat."
         content.sound = .default
 
         var when = DateComponents()
