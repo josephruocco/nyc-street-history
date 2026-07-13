@@ -62,8 +62,8 @@ enum BoroughSigns {
                    "Welcome to Queens: Every Language, One Borough."],
         "manhattan": ["Welcome to Manhattan: Watch the Closing Doors.",
                       "Welcome to Manhattan: Stand Clear of the Hype."],
-        "bronx": ["Welcome to the Bronx: The Boogie Down!",
-                  "Welcome to the Bronx: Birthplace of Hip Hop."],
+        "bronx": ["Welcome to the Bronx: The Only Borough on the Mainland.",
+                  "Welcome to the Bronx: Home of the Yankees."],
         "staten island": ["Welcome to Staten Island: Yes, It Counts.",
                           "Welcome to Staten Island: The Ferry's Free, Enjoy."],
     ]
