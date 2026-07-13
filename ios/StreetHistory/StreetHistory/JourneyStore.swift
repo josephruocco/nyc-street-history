@@ -14,6 +14,8 @@ struct StreetVisit: Codable, Identifiable {
     let timestamp: Date
     let latitude: Double
     let longitude: Double
+    /// A cheeky borough sign slogan, set when this visit crossed a borough line.
+    let boroughCrossing: String?
 
     init(
         streetName: String,
@@ -23,7 +25,8 @@ struct StreetVisit: Codable, Identifiable {
         factSnippet: String?,
         timestamp: Date,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        boroughCrossing: String? = nil
     ) {
         self.id = UUID()
         self.streetName = streetName
@@ -34,6 +37,53 @@ struct StreetVisit: Codable, Identifiable {
         self.timestamp = timestamp
         self.latitude = latitude
         self.longitude = longitude
+        self.boroughCrossing = boroughCrossing
+    }
+}
+
+/// Borough sign slogans, in the spirit of Brooklyn's famous highway signs.
+enum BoroughSigns {
+    static func canonical(_ borough: String?) -> String? {
+        guard let b = borough?.lowercased() else { return nil }
+        if b.contains("brooklyn") { return "brooklyn" }
+        if b.contains("queens") { return "queens" }
+        if b.contains("bronx") { return "bronx" }
+        if b.contains("staten") { return "staten island" }
+        if b.contains("manhattan") || b.contains("new york") { return "manhattan" }
+        return nil
+    }
+
+    private static let welcome: [String: [String]] = [
+        "brooklyn": ["Welcome to Brooklyn: Believe the Hype!",
+                     "Welcome to Brooklyn: How Sweet It Is!",
+                     "Welcome to Brooklyn: Name It, We Got It!",
+                     "Brooklyn's in the House!"],
+        "queens": ["Welcome to Queens: The World's Borough!",
+                   "Welcome to Queens: Every Language, One Borough."],
+        "manhattan": ["Welcome to Manhattan: Watch the Closing Doors.",
+                      "Welcome to Manhattan: Stand Clear of the Hype."],
+        "bronx": ["Welcome to the Bronx: The Boogie Down!",
+                  "Welcome to the Bronx: Birthplace of Hip Hop."],
+        "staten island": ["Welcome to Staten Island: Yes, It Counts.",
+                          "Welcome to Staten Island: The Ferry's Free, Enjoy."],
+    ]
+
+    private static let leaveBrooklyn = ["Leaving Brooklyn: Fuhgeddaboudit!",
+                                        "Leaving Brooklyn: Oy Vey!"]
+
+    /// Slogan for crossing from `from` into `to`, or nil if no real crossing.
+    static func slogan(from: String?, to: String?) -> String? {
+        guard let toKey = canonical(to) else { return nil }
+        let fromKey = canonical(from)
+        guard fromKey != toKey else { return nil }
+        if fromKey == "brooklyn" {
+            return leaveBrooklyn.randomElement()
+        }
+        return welcome[toKey]?.randomElement()
+    }
+
+    static func involvesBrooklyn(from: String?, to: String?) -> Bool {
+        canonical(from) == "brooklyn" || canonical(to) == "brooklyn"
     }
 }
 
@@ -115,6 +165,7 @@ final class JourneyStore: ObservableObject {
         Task {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             notificationsAuthorized = settings.authorizationStatus == .authorized
+            if notificationsAuthorized { scheduleWeekendTrainNotification() }
         }
     }
 
@@ -202,6 +253,9 @@ final class JourneyStore: ObservableObject {
             return
         }
 
+        let previousBorough = currentSession?.visits.last?.borough
+        let crossing = BoroughSigns.slogan(from: previousBorough, to: card.borough)
+
         let visit = StreetVisit(
             streetName: streetName,
             crossStreet: card.cross_street,
@@ -210,11 +264,16 @@ final class JourneyStore: ObservableObject {
             factSnippet: card.did_you_know,
             timestamp: Date(),
             latitude: location.coordinate.latitude,
-            longitude: location.coordinate.longitude
+            longitude: location.coordinate.longitude,
+            boroughCrossing: crossing
         )
 
         currentSession?.visits.append(visit)
         persistCurrentSession()
+
+        if let crossing, BoroughSigns.involvesBrooklyn(from: previousBorough, to: card.borough) {
+            notifyBoroughCrossing(crossing)
+        }
         notifyIfNeeded(for: visit, firstEver: firstEver)
     }
 
@@ -285,6 +344,7 @@ final class JourneyStore: ObservableObject {
         let settings = await center.notificationSettings()
         if settings.authorizationStatus == .authorized {
             notificationsAuthorized = true
+            scheduleWeekendTrainNotification()
             return
         }
 
@@ -293,6 +353,37 @@ final class JourneyStore: ObservableObject {
         } catch {
             notificationsAuthorized = false
         }
+        if notificationsAuthorized { scheduleWeekendTrainNotification() }
+    }
+
+    private func notifyBoroughCrossing(_ slogan: String) {
+        guard notificationsAuthorized else { return }
+        let content = UNMutableNotificationContent()
+        content.title = slogan
+        content.sound = .default
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: "crossing-\(UUID().uuidString)", content: content, trigger: nil)
+        )
+    }
+
+    /// A cheeky Saturday nudge about NYC weekend service. Repeats weekly; the
+    /// system ignores it until notifications are authorized.
+    /// ponytail: single fixed line. Rotate by scheduling several future-dated
+    /// notifications if variety ever matters.
+    func scheduleWeekendTrainNotification() {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["weekend-train"])
+
+        let content = UNMutableNotificationContent()
+        content.title = "It's the weekend"
+        content.body = "The B's asleep and half the L is rerouted, but that never stops New York."
+        content.sound = .default
+
+        var when = DateComponents()
+        when.weekday = 7   // Saturday
+        when.hour = 11
+        let trigger = UNCalendarNotificationTrigger(dateMatching: when, repeats: true)
+        center.add(UNNotificationRequest(identifier: "weekend-train", content: content, trigger: trigger))
     }
 
     private func notifyFirstVisit(streetName: String, card: CardResponse) {

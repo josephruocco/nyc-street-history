@@ -215,6 +215,14 @@ struct JourneysView: View {
 
     private func visitRow(_ visit: StreetVisit) -> some View {
         VStack(alignment: .leading, spacing: 6) {
+            if let crossing = visit.boroughCrossing {
+                Text(crossing)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(green.opacity(0.12), in: Capsule())
+            }
             Text(visit.streetName).font(.headline)
             Text(dateFormatter.string(from: visit.timestamp))
                 .font(.caption).foregroundStyle(.secondary)
