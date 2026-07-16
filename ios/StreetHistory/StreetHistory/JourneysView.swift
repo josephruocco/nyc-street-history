@@ -67,6 +67,7 @@ struct JourneysView: View {
                 }
             }
             .task { await collection.load() }
+            .refreshable { await collection.load(force: true) }
         }
     }
 

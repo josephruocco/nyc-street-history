@@ -30,7 +30,7 @@ final class FactMapViewModel: ObservableObject {
     private let baseURL: String
     private static let cacheKey = "cachedMapFacts"
     private static let cacheTimestampKey = "cachedMapFactsTimestamp"
-    private static let cacheTTL: TimeInterval = 3600 // 1 hour
+    private static let cacheTTL: TimeInterval = 120 // 2 min, so new facts show fast
 
     init() {
         self.baseURL = Bundle.main.object(forInfoDictionaryKey: "APIBaseURL") as? String

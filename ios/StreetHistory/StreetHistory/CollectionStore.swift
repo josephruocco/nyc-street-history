@@ -36,13 +36,14 @@ final class CollectionStore: ObservableObject {
             ?? "https://nyc-street-history.onrender.com"
     }
 
-    func load() async {
-        if let data = UserDefaults.standard.data(forKey: Self.cacheKey),
+    func load(force: Bool = false) async {
+        if !force,
+           let data = UserDefaults.standard.data(forKey: Self.cacheKey),
            let decoded = try? JSONDecoder().decode([FactMapItem].self, from: data) {
             catalog = decoded
             return
         }
-        guard catalog.isEmpty else { return }
+        if !force && !catalog.isEmpty { return }
         isLoading = true
         defer { isLoading = false }
         do {

@@ -25,6 +25,7 @@ struct SettingsView: View {
     @AppStorage("appTheme") private var appTheme = AppTheme.system.rawValue
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = true
     @ObservedObject var journeyStore: JourneyStore
+    @ObservedObject private var demo = DemoLocationStore.shared
 
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
@@ -75,6 +76,27 @@ struct SettingsView: View {
                             Label("Enable new street alerts", systemImage: "bell.badge")
                         }
                     }
+                }
+
+                Section {
+                    Picker("Location", selection: Binding(
+                        get: { demo.activeName ?? "" },
+                        set: { name in
+                            if name.isEmpty { demo.clear() }
+                            else if let p = demo.presets.first(where: { $0.name == name }) { demo.set(p) }
+                        }
+                    )) {
+                        Text("Off (use GPS)").tag("")
+                        ForEach(demo.presets) { p in
+                            Text(p.name).tag(p.name)
+                        }
+                    }
+                } header: {
+                    Text("Demo location")
+                } footer: {
+                    Text(demo.activeName == nil
+                        ? "Pretend you're standing on any street to preview its card."
+                        : "Simulating \(demo.activeName!). The Street tab shows this street until you turn it off.")
                 }
 
                 Section("Help") {

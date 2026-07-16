@@ -14,13 +14,28 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
 
     private var lastSignificant: CLLocation?
     private let gateMeters: CLLocationDistance = 15
+    private var demoCancellable: AnyCancellable?
 
     override init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.distanceFilter = 5
+
+        // When a demo location is set, emit it and ignore GPS until cleared.
+        demoCancellable = DemoLocationStore.shared.$coordinate
+            .sink { [weak self] coord in
+                guard let self else { return }
+                if let coord {
+                    let loc = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+                    self.lastSignificant = loc
+                    self.location = loc
+                    self.significantLocation = loc
+                }
+            }
     }
+
+    private var isDemo: Bool { DemoLocationStore.shared.coordinate != nil }
 
     func requestPermissionAndStart() {
         manager.requestWhenInUseAuthorization()
@@ -35,6 +50,7 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard !isDemo else { return }   // demo override wins
         guard let loc = locations.last else { return }
         location = loc
 

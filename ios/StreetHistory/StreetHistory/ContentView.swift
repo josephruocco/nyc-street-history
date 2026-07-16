@@ -6,6 +6,15 @@ struct ContentView: View {
     @StateObject private var lm = LocationManager()
     @StateObject private var vm = CardViewModel()
     @ObservedObject var journeyStore: JourneyStore
+    @ObservedObject private var demo = DemoLocationStore.shared
+
+    /// Demo pin if set, otherwise the real GPS fix.
+    private var activeLocation: CLLocation? {
+        if let c = demo.coordinate {
+            return CLLocation(latitude: c.latitude, longitude: c.longitude)
+        }
+        return lm.significantLocation
+    }
 
     @State private var fetchTask: Task<Void, Never>?
     @State private var isUpdating = false
@@ -39,20 +48,11 @@ struct ContentView: View {
                 .padding(.top, 18)
                 .padding(.bottom, 28)
             }
+            .refreshable { await refreshCard() }
         }
 
-        .onChange(of: lm.significantLocation) { _, loc in
-            guard isAuthorized, let loc else { return }
-
-            isUpdating = true
-            fetchTask?.cancel()
-            fetchTask = Task {
-                defer { isUpdating = false }
-                await vm.update(for: loc)
-                if let card = vm.card {
-                    journeyStore.record(card: card, location: loc)
-                }
-            }
+        .onChange(of: lm.significantLocation) { _, _ in
+            fetchCard(for: activeLocation)
         }
         .onChange(of: lm.status) { _, _ in
             if isAuthorized {
@@ -64,6 +64,10 @@ struct ContentView: View {
                 lm.requestPermissionAndStart()
             }
             journeyStore.closeStaleSession()
+        }
+        // Runs when the Street tab appears and whenever the demo pin changes.
+        .task(id: demo.activeName) {
+            fetchCard(for: activeLocation)
         }
         .sheet(isPresented: $showHistory) {
             JourneyHistoryView(journeyStore: journeyStore)
@@ -78,6 +82,28 @@ struct ContentView: View {
         }
         .sheet(item: $selectedNeighborhoodGuide) { guide in
             NeighborhoodGuideDetailView(guide: guide)
+        }
+    }
+
+    /// Awaitable refetch for pull-to-refresh, so the spinner waits for the card.
+    private func refreshCard() async {
+        guard isAuthorized || demo.coordinate != nil, let loc = activeLocation else { return }
+        await vm.update(for: loc)
+        if let card = vm.card {
+            journeyStore.record(card: card, location: loc)
+        }
+    }
+
+    private func fetchCard(for loc: CLLocation?) {
+        guard isAuthorized || DemoLocationStore.shared.coordinate != nil, let loc else { return }
+        isUpdating = true
+        fetchTask?.cancel()
+        fetchTask = Task {
+            defer { isUpdating = false }
+            await vm.update(for: loc)
+            if let card = vm.card {
+                journeyStore.record(card: card, location: loc)
+            }
         }
     }
 
