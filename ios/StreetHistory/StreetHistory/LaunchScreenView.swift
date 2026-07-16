@@ -1,15 +1,17 @@
 import SwiftUI
 
 struct LaunchScreenView: View {
+    // Cream to match the app icon background (#FBEEDC)
+    private let cream = Color(red: 0.984, green: 0.933, blue: 0.863)
+
     var body: some View {
-        GeometryReader { proxy in
-            Image("LaunchImage")
+        ZStack {
+            cream.ignoresSafeArea()
+            Image("LaunchSign")
                 .resizable()
-                .scaledToFill()
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .clipped()
+                .scaledToFit()
+                .frame(maxWidth: 230)
+                .padding(.bottom, 40)
         }
-        .ignoresSafeArea()
-        .background(Color.black)
     }
 }
