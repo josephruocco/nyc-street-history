@@ -1,4 +1,17 @@
 import SwiftUI
+import UIKit
+
+struct AppIconOption: Identifiable {
+    let id = UUID()
+    let label: String
+    let altName: String?   // nil = primary (the LORE ST photo)
+
+    static let all: [AppIconOption] = [
+        .init(label: "Street sign photo (default)", altName: nil),
+        .init(label: "Clean sign", altName: "AppIconClean"),
+        .init(label: "Hand-drawn", altName: "AppIconDoodle"),
+    ]
+}
 
 enum AppTheme: String, CaseIterable, Identifiable {
     case system, light, dark
@@ -26,6 +39,14 @@ struct SettingsView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = true
     @ObservedObject var journeyStore: JourneyStore
     @ObservedObject private var demo = DemoLocationStore.shared
+    @State private var currentIcon = UIApplication.shared.alternateIconName
+
+    private func setAppIcon(_ option: AppIconOption) {
+        guard UIApplication.shared.alternateIconName != option.altName else { return }
+        UIApplication.shared.setAlternateIconName(option.altName) { _ in
+            currentIcon = UIApplication.shared.alternateIconName
+        }
+    }
 
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
@@ -63,6 +84,24 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section("App icon") {
+                    ForEach(AppIconOption.all) { option in
+                        Button {
+                            setAppIcon(option)
+                        } label: {
+                            HStack {
+                                Text(option.label)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if currentIcon == option.altName {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Section("Notifications") {
