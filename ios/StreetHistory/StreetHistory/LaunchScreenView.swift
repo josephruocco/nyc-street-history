@@ -7,11 +7,13 @@ struct LaunchScreenView: View {
     var body: some View {
         ZStack {
             cream.ignoresSafeArea()
-            Image("LaunchSign")
+            // The exact app icon, presented as a rounded icon splash.
+            Image("LaunchIcon")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 230)
-                .padding(.bottom, 40)
+                .frame(width: 180, height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
+                .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 8)
         }
     }
 }
