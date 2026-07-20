@@ -21,11 +21,61 @@ struct FactMapItem: Codable, Identifiable, Hashable {
     }
 }
 
+struct StreetLine: Codable, Identifiable {
+    let street_name: String
+    let namesake: String?
+    let confidence: Double
+    let path: [[Double]]          // [[lat, lon], ...]
+
+    var id: String { "\(street_name)|\(path.first?.first ?? 0)|\(path.first?.last ?? 0)" }
+    var coordinates: [CLLocationCoordinate2D] {
+        path.compactMap { p in
+            p.count >= 2 ? CLLocationCoordinate2D(latitude: p[0], longitude: p[1]) : nil
+        }
+    }
+}
+
 @MainActor
 final class FactMapViewModel: ObservableObject {
     @Published var facts: [FactMapItem] = []
+    @Published var lines: [StreetLine] = []
     @Published var isLoading = false
     @Published var errorText: String?
+
+    private var lastLineFetch = Date.distantPast
+    private var lastLineBox: String = ""
+
+    /// Street geometry for the visible box. Skipped when zoomed way out.
+    func loadLines(for region: MKCoordinateRegion) async {
+        guard region.span.latitudeDelta < 0.14 else {
+            if !lines.isEmpty { lines = [] }
+            return
+        }
+        let minLat = region.center.latitude - region.span.latitudeDelta / 2
+        let maxLat = region.center.latitude + region.span.latitudeDelta / 2
+        let minLon = region.center.longitude - region.span.longitudeDelta / 2
+        let maxLon = region.center.longitude + region.span.longitudeDelta / 2
+        // Skip refetching for tiny camera nudges.
+        let box = String(format: "%.3f,%.3f,%.3f,%.3f", minLat, minLon, maxLat, maxLon)
+        guard box != lastLineBox, Date().timeIntervalSince(lastLineFetch) > 0.4 else { return }
+        lastLineBox = box
+        lastLineFetch = Date()
+
+        var comps = URLComponents(string: "\(baseURL)/v1/facts/lines")!
+        comps.queryItems = [
+            .init(name: "min_lat", value: "\(minLat)"), .init(name: "min_lon", value: "\(minLon)"),
+            .init(name: "max_lat", value: "\(maxLat)"), .init(name: "max_lon", value: "\(maxLon)"),
+            .init(name: "limit_n", value: "1500"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.timeoutInterval = 20
+        do {
+            let (data, _) = try await URLSession.shared.data(for: req)
+            lines = try JSONDecoder().decode([StreetLine].self, from: data)
+        } catch {
+            // Highlights are a nice-to-have; keep the map usable if this fails.
+        }
+    }
 
     private let baseURL: String
     private static let cacheKey = "cachedMapFacts"
@@ -109,11 +159,9 @@ struct FactMapView: View {
     @State private var nearbyMode = false
     @State private var searchText = ""
     @State private var showSearch = false
-    @State private var position: MapCameraPosition = .region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 40.6782, longitude: -73.9442),
-            span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-        )
+    @State private var cameraTarget: MKCoordinateRegion? = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 40.6782, longitude: -73.9442),
+        span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
     )
     @State private var visibleRegion: MKCoordinateRegion?
 
@@ -165,31 +213,20 @@ struct FactMapView: View {
 
     var body: some View {
         ZStack {
-            Map(position: $position) {
-                UserAnnotation()
-
-                ForEach(visibleFacts) { fact in
-                    Annotation(prettifyStreetName(fact.street_name), coordinate: fact.coordinate) {
-                        Button {
-                            nearbyMode = false
-                            selectedFact = fact
-                        } label: {
-                            Circle()
-                                .fill(markerColor(fact.confidence))
-                                .frame(width: 12, height: 12)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 2)
-                                )
-                                .shadow(radius: 2)
-                        }
-                    }
+            StreetMapView(
+                lines: vm.lines,
+                facts: visibleFacts,
+                cameraTarget: cameraTarget,
+                onSelect: { fact in
+                    nearbyMode = false
+                    selectedFact = fact
+                },
+                onRegionChange: { region in
+                    visibleRegion = region
+                    Task { await vm.loadLines(for: region) }
                 }
-            }
-            .mapStyle(.standard(pointsOfInterest: .excludingAll))
-            .onMapCameraChange(frequency: .onEnd) { context in
-                visibleRegion = context.region
-            }
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
@@ -242,10 +279,10 @@ struct FactMapView: View {
                                         Button {
                                             selectedFact = fact
                                             nearbyMode = false
-                                            position = .region(MKCoordinateRegion(
+                                            cameraTarget = MKCoordinateRegion(
                                                 center: fact.coordinate,
                                                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                                            ))
+                                            )
                                             showSearch = false
                                             searchText = ""
                                         } label: {
@@ -320,10 +357,10 @@ struct FactMapView: View {
             guard nearbyMode, idx < nearbyFacts.count else { return }
             let fact = nearbyFacts[idx]
             withAnimation {
-                position = .region(MKCoordinateRegion(
+                cameraTarget = MKCoordinateRegion(
                     center: fact.coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
-                ))
+                )
             }
         }
     }
@@ -335,12 +372,10 @@ struct FactMapView: View {
         nearbyIndex = 0
         nearbyMode = true
         if let loc = lm.significantLocation {
-            position = .region(MKCoordinateRegion(
+            cameraTarget = MKCoordinateRegion(
                 center: loc.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
-            ))
-        } else {
-            position = .userLocation(fallback: .automatic)
+            )
         }
     }
 
