@@ -173,10 +173,21 @@ struct FactMapView: View {
         let latMax = r.center.latitude + r.span.latitudeDelta / 2 + 0.005
         let lonMin = r.center.longitude - r.span.longitudeDelta / 2 - 0.005
         let lonMax = r.center.longitude + r.span.longitudeDelta / 2 + 0.005
+        // A long street's point can sit far outside the view while its line runs
+        // right through it, so keep any street whose line is on screen too.
+        var streetsOnScreen = Set<String>()
+        for line in vm.lines {
+            let onScreen = line.path.contains { p in
+                p.count >= 2 && p[0] >= latMin && p[0] <= latMax && p[1] >= lonMin && p[1] <= lonMax
+            }
+            if onScreen { streetsOnScreen.insert(line.street_name.lowercased()) }
+        }
+
         var seen = Set<String>()
         var out: [FactMapItem] = []
         for f in vm.facts {
-            if f.lat < latMin || f.lat > latMax || f.lon < lonMin || f.lon > lonMax { continue }
+            let pointInView = f.lat >= latMin && f.lat <= latMax && f.lon >= lonMin && f.lon <= lonMax
+            if !pointInView && !streetsOnScreen.contains(f.street_name.lowercased()) { continue }
             if !seen.insert(f.id).inserted { continue }
             out.append(f)
             if out.count >= 300 { break }
