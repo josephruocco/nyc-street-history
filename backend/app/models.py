@@ -35,6 +35,13 @@ class FactMapItem(BaseModel):
     rarity: str = "common"
 
 
+class StreetLine(BaseModel):
+    street_name: str
+    namesake: Optional[str] = None
+    confidence: float
+    path: list[list[float]]  # [[lat, lon], ...]
+
+
 class CardResponse(BaseModel):
     canonical_street: Optional[str] = None
     cross_street: Optional[str] = None

@@ -1,10 +1,11 @@
+import json
 import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .cache import SimpleTTLCache, encode_geohash
 from .db import fetch_one, fetch_all, execute
-from .models import CardResponse, NearbyItem, Source, HistoryEntry, FactMapItem
+from .models import CardResponse, NearbyItem, Source, HistoryEntry, FactMapItem, StreetLine
 from .settings import settings
 from .queries import (
     SNAP_STREET_SQL,
@@ -15,6 +16,7 @@ from .queries import (
     FACT_BY_PLACENAME_SQL,
     CROSS_STREET_SQL,
     FACTS_MAP_SQL,
+    STREET_LINES_SQL,
     is_numbered_or_lettered_street,
 )
 
@@ -269,6 +271,44 @@ def facts_map(min_confidence: float = 0.0):
     result = [FactMapItem(**r) for r in rows]
     MAP_CACHE.set(key, result, ttl_seconds=21600)  # 6h; map data rarely changes
     return result
+
+
+
+@app.get("/v1/facts/lines", response_model=list[StreetLine])
+def facts_lines(
+    min_lat: float,
+    min_lon: float,
+    max_lat: float,
+    max_lon: float,
+    min_confidence: float = 0.0,
+    limit_n: int = 1200,
+):
+    """Geometry of storied streets inside a viewport, for drawing highlights."""
+    rows = fetch_all(
+        STREET_LINES_SQL,
+        {
+            "min_lat": min_lat, "min_lon": min_lon,
+            "max_lat": max_lat, "max_lon": max_lon,
+            "min_confidence": min_confidence, "limit_n": max(1, min(limit_n, 3000)),
+        },
+    )
+    out: list[StreetLine] = []
+    for r in rows:
+        try:
+            geom = json.loads(r["geojson"])
+        except (TypeError, ValueError):
+            continue
+        segments = [geom["coordinates"]] if geom.get("type") == "LineString" else geom.get("coordinates", [])
+        for seg in segments:
+            path = [[c[1], c[0]] for c in seg if len(c) >= 2]
+            if len(path) >= 2:
+                out.append(StreetLine(
+                    street_name=r["street_name"],
+                    namesake=r.get("namesake"),
+                    confidence=r["confidence"],
+                    path=path,
+                ))
+    return out
 
 
 @app.get("/health")

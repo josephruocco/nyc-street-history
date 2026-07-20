@@ -178,6 +178,23 @@ WHERE f.key_type = 'street_name'
 ORDER BY f.key_value;
 """
 
+# Street geometry for storied streets inside a viewport. Bbox-scoped so the
+# payload stays small; relies on the GIST index on street_segment.geom.
+STREET_LINES_SQL = """
+SELECT
+  f.key_value AS street_name,
+  f.namesake,
+  f.confidence,
+  ST_AsGeoJSON(ST_Simplify(s.geom, 0.00004)) AS geojson
+FROM fact f
+JOIN street_segment s
+  ON LOWER(BTRIM(s.primary_name)) = LOWER(BTRIM(f.key_value))
+WHERE f.key_type = 'street_name'
+  AND f.confidence >= :min_confidence
+  AND s.geom && ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326)
+LIMIT :limit_n;
+"""
+
 CROSS_STREET_SQL = """
 WITH main AS (
   SELECT id, primary_name, geom
