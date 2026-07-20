@@ -21,11 +21,58 @@ struct FactMapItem: Codable, Identifiable, Hashable {
     }
 }
 
+struct StreetLine: Codable, Identifiable {
+    let street_name: String
+    let namesake: String?
+    let confidence: Double
+    let path: [[Double]]          // [[lat, lon], ...]
+
+    var id: String { "\(street_name)|\(path.first?.first ?? 0)|\(path.first?.last ?? 0)" }
+    var coordinates: [CLLocationCoordinate2D] {
+        path.compactMap { p in
+            p.count >= 2 ? CLLocationCoordinate2D(latitude: p[0], longitude: p[1]) : nil
+        }
+    }
+}
+
 @MainActor
 final class FactMapViewModel: ObservableObject {
     @Published var facts: [FactMapItem] = []
+    @Published var lines: [StreetLine] = []
     @Published var isLoading = false
     @Published var errorText: String?
+
+    private var lastLineFetch: Date = .distantPast
+
+    /// Street geometry for the visible box. Skipped when zoomed way out, so we
+    /// never pull the whole city's lines at once.
+    func loadLines(for region: MKCoordinateRegion) async {
+        guard region.span.latitudeDelta < 0.12 else {
+            if !lines.isEmpty { lines = [] }
+            return
+        }
+        guard Date().timeIntervalSince(lastLineFetch) > 0.6 else { return }
+        lastLineFetch = Date()
+
+        let minLat = region.center.latitude - region.span.latitudeDelta / 2
+        let maxLat = region.center.latitude + region.span.latitudeDelta / 2
+        let minLon = region.center.longitude - region.span.longitudeDelta / 2
+        let maxLon = region.center.longitude + region.span.longitudeDelta / 2
+        var comps = URLComponents(string: "\(baseURL)/v1/facts/lines")!
+        comps.queryItems = [
+            .init(name: "min_lat", value: "\(minLat)"), .init(name: "min_lon", value: "\(minLon)"),
+            .init(name: "max_lat", value: "\(maxLat)"), .init(name: "max_lon", value: "\(maxLon)"),
+            .init(name: "limit_n", value: "1200"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.timeoutInterval = 20
+        do {
+            let (data, _) = try await URLSession.shared.data(for: req)
+            lines = try JSONDecoder().decode([StreetLine].self, from: data)
+        } catch {
+            // Highlights are a nice-to-have; keep the map usable if this fails.
+        }
+    }
 
     private let baseURL: String
     private static let cacheKey = "cachedMapFacts"
@@ -168,6 +215,13 @@ struct FactMapView: View {
             Map(position: $position) {
                 UserAnnotation()
 
+                // Highlight the actual street geometry for streets we have a story for.
+                ForEach(vm.lines) { line in
+                    MapPolyline(coordinates: line.coordinates)
+                        .stroke(markerColor(line.confidence).opacity(0.85), style:
+                            StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                }
+
                 ForEach(visibleFacts) { fact in
                     Annotation(prettifyStreetName(fact.street_name), coordinate: fact.coordinate) {
                         Button {
@@ -189,6 +243,7 @@ struct FactMapView: View {
             .mapStyle(.standard(pointsOfInterest: .excludingAll))
             .onMapCameraChange(frequency: .onEnd) { context in
                 visibleRegion = context.region
+                Task { await vm.loadLines(for: context.region) }
             }
 
             VStack(spacing: 0) {
