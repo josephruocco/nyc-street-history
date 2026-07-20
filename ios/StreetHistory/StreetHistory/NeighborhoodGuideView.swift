@@ -121,9 +121,19 @@ enum NeighborhoodGuideStore {
     ]
 
     static func neighborhood(named name: String) -> NeighborhoodGuide? {
-        boroughs
-            .flatMap(\.neighborhoods)
-            .first { $0.neighborhood.caseInsensitiveCompare(name) == .orderedSame }
+        let all = boroughs.flatMap(\.neighborhoods)
+        if let exact = all.first(where: { $0.neighborhood.caseInsensitiveCompare(name) == .orderedSame }) {
+            return exact
+        }
+        // The API returns city NTA names like "Astoria (Central)" or
+        // "Financial District-Battery Park City"; match on the plain name.
+        let cleaned = name
+            .replacingOccurrences(of: #"\s*\([^)]*\)"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        if let m = all.first(where: { $0.neighborhood.caseInsensitiveCompare(cleaned) == .orderedSame }) {
+            return m
+        }
+        return all.first { cleaned.localizedCaseInsensitiveContains($0.neighborhood) }
     }
 }
 

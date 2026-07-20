@@ -32,6 +32,13 @@ struct ContentView: View {
         return parts.isEmpty ? nil : parts.joined(separator: " • ")
     }
 
+    /// City NTA names read like "Astoria (Central)"; trim to the plain name.
+    private func sectionName(_ raw: String) -> String {
+        raw.replacingOccurrences(of: #"\s*\([^)]*\)"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+
     var body: some View {
         ZStack {
             Color(red: 0.92, green: 0.89, blue: 0.84)
@@ -289,38 +296,6 @@ struct ContentView: View {
                 )
             }
 
-            if let placeLine {
-                let guide = card.neighborhood.flatMap { NeighborhoodGuideStore.neighborhood(named: $0) }
-                Group {
-                    if let guide {
-                        Button {
-                            selectedNeighborhoodGuide = guide
-                        } label: {
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
-                                    .frame(width: 7, height: 7)
-                                Text(placeLine)
-                                    .font(.footnote.weight(.semibold))
-                                Image(systemName: "chevron.right")
-                                    .font(.caption2.weight(.bold))
-                            }
-                            .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color(red: 0.40, green: 0.24, blue: 0.14))
-                                .frame(width: 7, height: 7)
-                            Text(placeLine)
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(Color(red: 0.40, green: 0.24, blue: 0.14))
-                        }
-                    }
-                }
-            }
-
             HStack(alignment: .top) {
                 Text(card.canonical_street ?? "Unknown street")
                     .font(.system(size: 34, weight: .black, design: .rounded))
@@ -345,9 +320,32 @@ struct ContentView: View {
                 }
             }
 
+            if let placement = placementLine(card) {
+                Text(placement)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.black.opacity(0.55))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             if let cross = card.cross_street, !cross.isEmpty {
                 labelChip(title: "Crossing", value: cross)
             }
+        }
+    }
+
+    /// "Park Place is a street in the Crown Heights section of Brooklyn"
+    private func placementLine(_ card: CardResponse) -> String? {
+        guard let street = card.canonical_street, !street.isEmpty else { return nil }
+        // City NTA names read like "Astoria (Central)"; trim to the plain name.
+        let cleanedHood = sectionName(card.neighborhood ?? "")
+        let hood = cleanedHood.isEmpty ? nil : cleanedHood
+        let boro = card.borough?.isEmpty == false ? card.borough : nil
+
+        switch (hood, boro) {
+        case let (hood?, boro?): return "\(street) is a street in the \(hood) section of \(boro)."
+        case let (hood?, nil):   return "\(street) is a street in the \(hood) section."
+        case let (nil, boro?):   return "\(street) is a street in \(boro)."
+        default:                 return nil
         }
     }
 
