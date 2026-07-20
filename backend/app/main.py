@@ -271,7 +271,7 @@ def facts_map(min_confidence: float = 0.0):
     rows = fetch_all(FACTS_MAP_SQL, {"min_confidence": min_confidence})
     rows += fetch_all(PLACE_FACTS_MAP_SQL, {"min_confidence": min_confidence})
     result = [FactMapItem(**r) for r in rows]
-    MAP_CACHE.set(key, result, ttl_seconds=21600)  # 6h; map data rarely changes
+    MAP_CACHE.set(key, result, ttl_seconds=900)  # 15m; the nightly routine adds facts daily
     return result
 
 
